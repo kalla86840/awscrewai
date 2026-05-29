@@ -121,6 +121,13 @@ def _list_pinecone_index_names(pc):
     return {index["name"] for index in indexes}
 
 
+def _pinecone_index_ready(description):
+    status = getattr(description, "status", {}) or {}
+    if isinstance(status, dict):
+        return bool(status.get("ready"))
+    return bool(getattr(status, "ready", False))
+
+
 def get_pinecone_index():
     from pinecone import Pinecone, ServerlessSpec
     pc = Pinecone(api_key=get_pinecone_api_key())
@@ -128,12 +135,15 @@ def get_pinecone_index():
         return pc.Index(host=PINECONE_INDEX_HOST)
 
     if PINECONE_INDEX_NAME not in _list_pinecone_index_names(pc):
-        pc.create_index(name=PINECONE_INDEX_NAME, dimension=PINECONE_DIMENSION, metric=PINECONE_METRIC, spec=ServerlessSpec(cloud=PINECONE_CLOUD, region=PINECONE_REGION), deletion_protection="disabled")
+        try:
+            pc.create_index(name=PINECONE_INDEX_NAME, dimension=PINECONE_DIMENSION, metric=PINECONE_METRIC, spec=ServerlessSpec(cloud=PINECONE_CLOUD, region=PINECONE_REGION), deletion_protection="disabled")
+        except Exception as error:
+            if "already exists" not in str(error).lower():
+                raise
         deadline = time.time() + 120
         while time.time() < deadline:
             description = pc.describe_index(PINECONE_INDEX_NAME)
-            status = getattr(description, "status", {}) or {}
-            if status.get("ready"):
+            if _pinecone_index_ready(description):
                 break
             time.sleep(3)
     return pc.Index(PINECONE_INDEX_NAME)
@@ -148,6 +158,7 @@ def upsert_documents_to_pinecone(openai_client, index, documents):
     for document, embedding in zip(documents, embeddings):
         vectors.append({"id": document["id"], "values": embedding, "metadata": {"title": document["title"], "content": document["content"]}})
     index.upsert(vectors=vectors, namespace=PINECONE_NAMESPACE)
+    time.sleep(2)
     _PINECONE_INDEXED = True
 
 
