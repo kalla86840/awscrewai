@@ -64,14 +64,14 @@ Create the CI/CD pipeline:
 aws cloudformation deploy \
   --region us-west-1 \
   --template-file infrastructure/open-ai-rag-endpoint-cicd.yaml \
-  --stack-name open-ai-pinecone-duplicae-detection-cicd \
+  --stack-name open-ai-pinecone-duplicate-detection-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=open-ai-pinecone-duplicae-detection \
-    PipelineName=open-ai-pinecone-duplicae-detection \
+    ProjectName=open-ai-pinecone-duplicate-detection \
+    PipelineName=open-ai-pinecone-duplicate-detection \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awspineconerecommendationsystems \
+    RepositoryId=kalla86840/awspineconeduplicateorsimilaritydetection \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
@@ -83,7 +83,7 @@ aws cloudformation deploy \
     SimilarityScoreThreshold=0.85
 ```
 
-The pipeline name is `open-ai-pinecone-duplicae-detection`. It deploys the `open-ai-pinecone-duplicae-detection-endpoint` stack. Use the `EndpointUrl` output for real-time inference.
+The pipeline name is `open-ai-pinecone-duplicate-detection`. It deploys the `open-ai-pinecone-duplicate-detection-endpoint` stack. Use the `EndpointUrl` output for real-time inference.
 
 Run the Pinecone recommendation systems task:
 

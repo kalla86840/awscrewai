@@ -5,8 +5,8 @@ env:
     AWS_DEFAULT_REGION: us-west-1
     AWS_REGION: us-west-1
     ARTIFACT_BUCKET: mlopswithsagemaker111
-    STACK_NAME: open-ai-pinecone-multimodal-retrieval-endpoint
-    PROJECT_NAME: open-ai-pinecone-multimodal-retrieval
+    STACK_NAME: open-ai-pinecone-duplicate-detection-endpoint
+    PROJECT_NAME: open-ai-pinecone-duplicate-detection
     OPENAI_MODEL: gpt-5.2
     OPENAI_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ
     PINECONE_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra
@@ -36,9 +36,9 @@ phases:
       - mkdir -p package/knowledge
       - cp rag_endpoint/knowledge/open_ai_rag_knowledge.txt package/knowledge/open_ai_rag_knowledge.txt
       - cd package
-      - zip -r ../open-ai-pinecone-multimodal-retrieval-endpoint.zip .
+      - zip -r ../open-ai-pinecone-duplicate-detection-endpoint.zip .
       - cd ..
-      - aws s3 cp open-ai-pinecone-multimodal-retrieval-endpoint.zip "s3://${ARTIFACT_BUCKET}/open-ai-pinecone-multimodal-retrieval/open-ai-pinecone-multimodal-retrieval-endpoint.zip"
+      - aws s3 cp open-ai-pinecone-duplicate-detection-endpoint.zip "s3://${ARTIFACT_BUCKET}/open-ai-pinecone-duplicate-detection/open-ai-pinecone-duplicate-detection-endpoint.zip"
       - |
         aws cloudformation deploy \
           --region "$AWS_REGION" \
@@ -48,7 +48,7 @@ phases:
           --parameter-overrides \
             ProjectName="$PROJECT_NAME" \
             ArtifactBucketName="$ARTIFACT_BUCKET" \
-            LambdaZipKey=open-ai-pinecone-multimodal-retrieval/open-ai-pinecone-multimodal-retrieval-endpoint.zip \
+            LambdaZipKey=open-ai-pinecone-duplicate-detection/open-ai-pinecone-duplicate-detection-endpoint.zip \
             OpenAIApiKeySecretArn="$OPENAI_API_KEY_SECRET_ARN" \
             PineconeApiKeySecretArn="$PINECONE_API_KEY_SECRET_ARN" \
             PineconeIndexName="$PINECONE_INDEX_NAME" \
@@ -72,7 +72,7 @@ phases:
 
 artifacts:
   files:
-    - open-ai-pinecone-multimodal-retrieval-endpoint.zip
+    - open-ai-pinecone-duplicate-detection-endpoint.zip
     - pinecone-recommendations-response.json
     - pinecone-semantic-search-response.json
 

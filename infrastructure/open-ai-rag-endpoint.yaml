@@ -4,13 +4,13 @@ Description: Real-time AWS Lambda Function URL endpoint for OpenAI and Pinecone 
 Parameters:
   ProjectName:
     Type: String
-    Default: open-ai-pinecone-multimodal-retrieval
+    Default: open-ai-pinecone-duplicate-detection
   ArtifactBucketName:
     Type: String
     Default: mlopswithsagemaker111
   LambdaZipKey:
     Type: String
-    Default: open-ai-pinecone-multimodal-retrieval/open-ai-pinecone-multimodal-retrieval-endpoint.zip
+    Default: open-ai-pinecone-duplicate-detection/open-ai-pinecone-duplicate-detection-endpoint.zip
   OpenAIApiKeySecretArn:
     Type: String
     Default: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ

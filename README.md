@@ -217,7 +217,7 @@ Agent sequence:
 
 The endpoint response includes `agents`, `answer`, `steps`, `safety_notes`, `citations`, `agent_consensus`, and `retrieved_context`.
 
-After deployment, get the URL from the `open-ai-pinecone-multimodal-retrieval-endpoint` CloudFormation stack output named `EndpointUrl`. The CodePipeline name is `open-ai-pinecone-multimodal-retrieval`.
+After deployment, get the URL from the `open-ai-pinecone-duplicate-detection-endpoint` CloudFormation stack output named `EndpointUrl`. The CodePipeline name is `open-ai-pinecone-duplicate-detection`.
 
 ## Agentic Hospital RAG Endpoint
 
@@ -319,11 +319,11 @@ aws secretsmanager describe-secret \
 aws cloudformation deploy \
   --region us-west-1 \
   --template-file infrastructure/open-ai-rag-endpoint-cicd.yaml \
-  --stack-name open-ai-pinecone-multimodal-retrieval-cicd \
+  --stack-name open-ai-pinecone-duplicate-detection-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=open-ai-pinecone-multimodal-retrieval \
-    PipelineName=open-ai-pinecone-multimodal-retrieval \
+    ProjectName=open-ai-pinecone-duplicate-detection \
+    PipelineName=open-ai-pinecone-duplicate-detection \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
     RepositoryId=kalla86840/awspineconemultimodalretrieval \

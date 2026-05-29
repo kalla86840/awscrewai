@@ -4,10 +4,10 @@ Description: CodePipeline for packaging and deploying the OpenAI and Pinecone du
 Parameters:
   ProjectName:
     Type: String
-    Default: open-ai-pinecone-multimodal-retrieval
+    Default: open-ai-pinecone-duplicate-detection
   PipelineName:
     Type: String
-    Default: open-ai-pinecone-multimodal-retrieval
+    Default: open-ai-pinecone-duplicate-detection
   ArtifactBucketName:
     Type: String
     Default: mlopswithsagemaker111
