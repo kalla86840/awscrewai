@@ -33,6 +33,10 @@ phases:
       - pip install -r rag_endpoint/requirements.txt -t package
   build:
     commands:
+      - export PINECONE_INDEX_NAME="open-ai-pinecone-duplicate-detection-1024"
+      - export PINECONE_INDEX_HOST=""
+      - export PINECONE_DIMENSION="1024"
+      - export PINECONE_UPSERT_ON_QUERY="true"
       - cp rag_endpoint/app.py package/app.py
       - mkdir -p package/knowledge
       - cp rag_endpoint/knowledge/open_ai_rag_knowledge.txt package/knowledge/open_ai_rag_knowledge.txt
@@ -69,7 +73,7 @@ phases:
       - ENDPOINT_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='EndpointUrl'].OutputValue | [0]" --output text)
       - 'curl -sS -X POST "$ENDPOINT_URL" -H "content-type: application/json" -d @samples/pinecone_duplicate_similarity_request.json -o pinecone-duplicate-similarity-response.json'
       - cat pinecone-duplicate-similarity-response.json
-      - python -c "import json; body=json.load(open('pinecone-duplicate-similarity-response.json')); assert 'error' not in body and body.get('retrieval_source') == 'pinecone' and body.get('matches') is not None, body; print('Pinecone duplicate/similarity detection task passed with 1024-dimensional embeddings')"
+      - python -c "import json, sys; body=json.load(open('pinecone-duplicate-similarity-response.json')); ok='error' not in body and body.get('retrieval_source') == 'pinecone' and body.get('matches') is not None; print(json.dumps(body, indent=2)); print('Pinecone duplicate/similarity detection task passed with 1024-dimensional embeddings') if ok else None; sys.exit(0 if ok else 1)"
       - 'curl -sS -X POST "$ENDPOINT_URL" -H "content-type: application/json" -d @samples/pinecone_semantic_search_request.json -o pinecone-semantic-search-response.json'
       - cat pinecone-semantic-search-response.json
       - python -c "import json; body=json.load(open('pinecone-semantic-search-response.json')); assert body.get('retrieval_source') == 'pinecone' and body.get('retrieved_context'), body; print('Pinecone semantic search compatibility task passed')"
