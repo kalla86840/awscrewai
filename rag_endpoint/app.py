@@ -10,7 +10,7 @@ OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.2")
 OPENAI_EMBEDDING_MODEL = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 OPENAI_API_KEY_SECRET_ARN = os.environ.get("OPENAI_API_KEY_SECRET_ARN")
 PINECONE_API_KEY_SECRET_ARN = os.environ.get("PINECONE_API_KEY_SECRET_ARN")
-PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "news-demo")
+PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "open-ai-pinecone-duplicate-detection-1024")
 PINECONE_INDEX_HOST = os.environ.get("PINECONE_INDEX_HOST")
 PINECONE_NAMESPACE = os.environ.get("PINECONE_NAMESPACE", "news")
 PINECONE_MEMORY_NAMESPACE = os.environ.get("PINECONE_MEMORY_NAMESPACE", "agent-memory")
@@ -23,7 +23,7 @@ PINECONE_REGION = os.environ.get("PINECONE_REGION", "us-east-1")
 PINECONE_DIMENSION = int(os.environ.get("PINECONE_DIMENSION", "1024"))
 PINECONE_METRIC = os.environ.get("PINECONE_METRIC", "cosine")
 ENABLE_PINECONE = os.environ.get("ENABLE_PINECONE", "true").lower() == "true"
-PINECONE_UPSERT_ON_QUERY = os.environ.get("PINECONE_UPSERT_ON_QUERY", "false").lower() == "true"
+PINECONE_UPSERT_ON_QUERY = os.environ.get("PINECONE_UPSERT_ON_QUERY", "true").lower() == "true"
 DUPLICATE_SCORE_THRESHOLD = float(os.environ.get("DUPLICATE_SCORE_THRESHOLD", "0.98"))
 SIMILARITY_SCORE_THRESHOLD = float(os.environ.get("SIMILARITY_SCORE_THRESHOLD", "0.85"))
 MAX_OUTPUT_TOKENS = int(os.environ.get("MAX_OUTPUT_TOKENS", "700"))

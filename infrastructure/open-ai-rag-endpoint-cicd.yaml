@@ -28,10 +28,10 @@ Parameters:
     Default: arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra
   PineconeIndexName:
     Type: String
-    Default: news-demo
+    Default: open-ai-pinecone-duplicate-detection-1024
   PineconeIndexHost:
     Type: String
-    Default: https://news-demo-4fe9eo0.svc.aped-4627-b74a.pinecone.io
+    Default: ""
   PineconeNamespace:
     Type: String
     Default: news
@@ -59,6 +59,12 @@ Parameters:
   PineconeDimension:
     Type: String
     Default: "1024"
+  PineconeUpsertOnQuery:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
 
 Resources:
   CodeBuildRole:
@@ -176,6 +182,8 @@ Resources:
             Value: !Ref PineconeMultimodalNamespace
           - Name: PINECONE_DIMENSION
             Value: !Ref PineconeDimension
+          - Name: PINECONE_UPSERT_ON_QUERY
+            Value: !Ref PineconeUpsertOnQuery
           - Name: DUPLICATE_SCORE_THRESHOLD
             Value: !Ref DuplicateScoreThreshold
           - Name: SIMILARITY_SCORE_THRESHOLD

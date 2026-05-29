@@ -33,11 +33,11 @@
   },
   {
     "ParameterKey": "PineconeIndexName",
-    "ParameterValue": "news-demo"
+    "ParameterValue": "open-ai-pinecone-duplicate-detection-1024"
   },
   {
     "ParameterKey": "PineconeIndexHost",
-    "ParameterValue": "https://news-demo-4fe9eo0.svc.aped-4627-b74a.pinecone.io"
+    "ParameterValue": ""
   },
   {
     "ParameterKey": "PineconeNamespace",
@@ -66,6 +66,10 @@
   {
     "ParameterKey": "PineconeDimension",
     "ParameterValue": "1024"
+  },
+  {
+    "ParameterKey": "PineconeUpsertOnQuery",
+    "ParameterValue": "true"
   },
   {
     "ParameterKey": "DuplicateScoreThreshold",

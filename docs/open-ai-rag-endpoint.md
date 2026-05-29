@@ -75,12 +75,14 @@ aws cloudformation deploy \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
-    PineconeIndexName=news-demo \
-    PineconeIndexHost=https://news-demo-4fe9eo0.svc.aped-4627-b74a.pinecone.io \
+    PineconeIndexName=open-ai-pinecone-duplicate-detection-1024 \
+    PineconeIndexHost="" \
     PineconeNamespace=news \
     PineconeDuplicateNamespace=news \
     DuplicateScoreThreshold=0.98 \
-    SimilarityScoreThreshold=0.85
+    SimilarityScoreThreshold=0.85 \
+    PineconeDimension=1024 \
+    PineconeUpsertOnQuery=true
 ```
 
 The pipeline name is `open-ai-pinecone-duplicate-detection`. It deploys the `open-ai-pinecone-duplicate-detection-endpoint` stack. Use the `EndpointUrl` output for real-time inference.

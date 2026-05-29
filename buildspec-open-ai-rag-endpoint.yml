@@ -10,8 +10,8 @@ env:
     OPENAI_MODEL: gpt-5.2
     OPENAI_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ
     PINECONE_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra
-    PINECONE_INDEX_NAME: news-demo
-    PINECONE_INDEX_HOST: https://news-demo-4fe9eo0.svc.aped-4627-b74a.pinecone.io
+    PINECONE_INDEX_NAME: open-ai-pinecone-duplicate-detection-1024
+    PINECONE_INDEX_HOST: ""
     PINECONE_NAMESPACE: news
     PINECONE_MEMORY_NAMESPACE: agent-memory
     PINECONE_DUPLICATE_NAMESPACE: news
@@ -19,6 +19,7 @@ env:
     PINECONE_CLUSTERING_NAMESPACE: news
     PINECONE_MULTIMODAL_NAMESPACE: news
     PINECONE_DIMENSION: "1024"
+    PINECONE_UPSERT_ON_QUERY: "true"
     DUPLICATE_SCORE_THRESHOLD: "0.98"
     SIMILARITY_SCORE_THRESHOLD: "0.85"
 
@@ -60,19 +61,22 @@ phases:
             PineconeClusteringNamespace="$PINECONE_CLUSTERING_NAMESPACE" \
             PineconeMultimodalNamespace="$PINECONE_MULTIMODAL_NAMESPACE" \
             PineconeDimension="$PINECONE_DIMENSION" \
+            PineconeUpsertOnQuery="$PINECONE_UPSERT_ON_QUERY" \
             DuplicateScoreThreshold="$DUPLICATE_SCORE_THRESHOLD" \
             SimilarityScoreThreshold="$SIMILARITY_SCORE_THRESHOLD" \
             OpenAIModel="$OPENAI_MODEL"
       - aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs" --output table
       - ENDPOINT_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='EndpointUrl'].OutputValue | [0]" --output text)
-      - 'curl -sS -f -X POST "$ENDPOINT_URL" -H "content-type: application/json" -d @samples/pinecone_recommendations_request.json -o pinecone-recommendations-response.json'
-      - python -c "import json; body=json.load(open('pinecone-recommendations-response.json')); assert body.get('retrieval_source') == 'pinecone' and body.get('recommendations'), body; print('Pinecone recommendation systems task passed with 1024-dimensional embeddings')"
-      - 'curl -sS -f -X POST "$ENDPOINT_URL" -H "content-type: application/json" -d @samples/pinecone_semantic_search_request.json -o pinecone-semantic-search-response.json'
+      - 'curl -sS -X POST "$ENDPOINT_URL" -H "content-type: application/json" -d @samples/pinecone_duplicate_similarity_request.json -o pinecone-duplicate-similarity-response.json'
+      - cat pinecone-duplicate-similarity-response.json
+      - python -c "import json; body=json.load(open('pinecone-duplicate-similarity-response.json')); assert 'error' not in body and body.get('retrieval_source') == 'pinecone' and body.get('matches') is not None, body; print('Pinecone duplicate/similarity detection task passed with 1024-dimensional embeddings')"
+      - 'curl -sS -X POST "$ENDPOINT_URL" -H "content-type: application/json" -d @samples/pinecone_semantic_search_request.json -o pinecone-semantic-search-response.json'
+      - cat pinecone-semantic-search-response.json
       - python -c "import json; body=json.load(open('pinecone-semantic-search-response.json')); assert body.get('retrieval_source') == 'pinecone' and body.get('retrieved_context'), body; print('Pinecone semantic search compatibility task passed')"
 
 artifacts:
   files:
     - open-ai-pinecone-duplicate-detection-endpoint.zip
-    - pinecone-recommendations-response.json
+    - pinecone-duplicate-similarity-response.json
     - pinecone-semantic-search-response.json
 

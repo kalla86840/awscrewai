@@ -14,8 +14,8 @@ uses OpenAI `text-embedding-3-small` with `PINECONE_DIMENSION=1024`, so the
 target Pinecone index must also be created with dimension `1024`.
 
 The endpoint recommends similar records by embedding a `seed_text`, known
-Pinecone `seed_id`, or user interest profile and querying the `news-demo`
-Pinecone index in real time.
+Pinecone `seed_id`, or user interest profile and querying the
+`open-ai-pinecone-duplicate-detection-1024` Pinecone index in real time.
 
 The local detector is still available for finding exact duplicate files and
 near-similar text/code files across generated packages:
@@ -266,8 +266,8 @@ The AWS defaults currently filled in are:
 - GitHub repository: `kalla86840/awspineconemultimodalretrieval`
 - OpenAI secret ARN: `arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ`
 - Pinecone secret ARN: `arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra`
-- Pinecone index: `news-demo`
-- Pinecone host: `https://news-demo-4fe9eo0.svc.aped-4627-b74a.pinecone.io`
+- Pinecone index: `open-ai-pinecone-duplicate-detection-1024`
+- Pinecone host: empty by default so the endpoint creates/uses the named 1024-dimensional index.
 - Pinecone namespace: `news`
 - Pinecone memory namespace: `agent-memory`
 - Pinecone duplicate namespace: `news`
@@ -277,7 +277,7 @@ The AWS defaults currently filled in are:
 - Pinecone dimension: `1024`
 - Duplicate score threshold: `0.98`
 - Similarity score threshold: `0.85`
-- Pinecone upsert on query: `false`, because `news-demo` already contains the news records.
+- Pinecone upsert on query: `true`, so CI seeds the 1024-dimensional index before smoke tests.
 
 Update an existing secret:
 
@@ -330,8 +330,8 @@ aws cloudformation deploy \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
-    PineconeIndexName=news-demo \
-    PineconeIndexHost=https://news-demo-4fe9eo0.svc.aped-4627-b74a.pinecone.io \
+    PineconeIndexName=open-ai-pinecone-duplicate-detection-1024 \
+    PineconeIndexHost="" \
     PineconeNamespace=news \
     PineconeMemoryNamespace=agent-memory \
     PineconeDuplicateNamespace=news \
@@ -339,6 +339,7 @@ aws cloudformation deploy \
     PineconeClusteringNamespace=news \
     PineconeMultimodalNamespace=news \
     PineconeDimension=1024 \
+    PineconeUpsertOnQuery=true \
     DuplicateScoreThreshold=0.98 \
     SimilarityScoreThreshold=0.85
 ```

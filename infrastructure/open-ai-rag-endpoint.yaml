@@ -21,10 +21,11 @@ Parameters:
     Description: AWS Secrets Manager secret ARN whose value is the Pinecone API key.
   PineconeIndexName:
     Type: String
-    Default: news-demo
+    Default: open-ai-pinecone-duplicate-detection-1024
   PineconeIndexHost:
     Type: String
-    Default: https://news-demo-4fe9eo0.svc.aped-4627-b74a.pinecone.io
+    Default: ""
+    Description: Optional existing Pinecone index host. Leave empty so the endpoint can create/use PineconeIndexName with the configured dimension.
   PineconeNamespace:
     Type: String
     Default: news
@@ -65,6 +66,12 @@ Parameters:
     Type: String
     Default: "1024"
     Description: Pinecone index vector dimension. Must match the OpenAI embedding dimension used by this endpoint.
+  PineconeUpsertOnQuery:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
 
 Resources:
   RagEndpointRole:
@@ -127,7 +134,7 @@ Resources:
           PINECONE_CLOUD: !Ref PineconeCloud
           PINECONE_REGION: !Ref PineconeRegion
           PINECONE_DIMENSION: !Ref PineconeDimension
-          PINECONE_UPSERT_ON_QUERY: "false"
+          PINECONE_UPSERT_ON_QUERY: !Ref PineconeUpsertOnQuery
           ENABLE_PINECONE: "true"
           RAG_KNOWLEDGE_PATH: knowledge/open_ai_rag_knowledge.txt
           TOP_K: "3"
