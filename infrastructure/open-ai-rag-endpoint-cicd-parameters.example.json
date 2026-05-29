@@ -64,6 +64,10 @@
     "ParameterValue": "news"
   },
   {
+    "ParameterKey": "PineconeDimension",
+    "ParameterValue": "1024"
+  },
+  {
     "ParameterKey": "DuplicateScoreThreshold",
     "ParameterValue": "0.98"
   },
