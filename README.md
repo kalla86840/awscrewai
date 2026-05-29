@@ -217,7 +217,7 @@ Agent sequence:
 
 The endpoint response includes `agents`, `answer`, `steps`, `safety_notes`, `citations`, `agent_consensus`, and `retrieved_context`.
 
-After deployment, get the URL from the `open-ai-pinecone-duplicae-detection-endpoint` CloudFormation stack output named `EndpointUrl`. The CodePipeline name is `open-ai-pinecone-duplicae-detection`.
+After deployment, get the URL from the `open-ai-pinecone-multimodal-retrieval-endpoint` CloudFormation stack output named `EndpointUrl`. The CodePipeline name is `open-ai-pinecone-multimodal-retrieval`.
 
 ## Agentic Hospital RAG Endpoint
 
@@ -263,7 +263,7 @@ The AWS defaults currently filled in are:
 - Region: `us-west-1`
 - Artifact bucket: `mlopswithsagemaker111`
 - CodeStar connection: `arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36`
-- GitHub repository: `kalla86840/awspineconeduplicateorsimilaritydetection`
+- GitHub repository: `kalla86840/awspineconemultimodalretrieval`
 - OpenAI secret ARN: `arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ`
 - Pinecone secret ARN: `arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra`
 - Pinecone index: `news-demo`
@@ -319,14 +319,14 @@ aws secretsmanager describe-secret \
 aws cloudformation deploy \
   --region us-west-1 \
   --template-file infrastructure/open-ai-rag-endpoint-cicd.yaml \
-  --stack-name open-ai-pinecone-duplicae-detection-cicd \
+  --stack-name open-ai-pinecone-multimodal-retrieval-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=open-ai-pinecone-duplicae-detection \
-    PipelineName=open-ai-pinecone-duplicae-detection \
+    ProjectName=open-ai-pinecone-multimodal-retrieval \
+    PipelineName=open-ai-pinecone-multimodal-retrieval \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awspineconeduplicateorsimilaritydetection \
+    RepositoryId=kalla86840/awspineconemultimodalretrieval \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
@@ -411,7 +411,7 @@ aws cloudformation deploy \
     ProjectName=agentic-open-ai \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awspineconeduplicateorsimilaritydetection \
+    RepositoryId=kalla86840/awspineconemultimodalretrieval \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2

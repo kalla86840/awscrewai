@@ -4,10 +4,10 @@ Description: CodePipeline for packaging and deploying the OpenAI and Pinecone du
 Parameters:
   ProjectName:
     Type: String
-    Default: open-ai-pinecone-duplicae-detection
+    Default: open-ai-pinecone-multimodal-retrieval
   PipelineName:
     Type: String
-    Default: open-ai-pinecone-duplicae-detection
+    Default: open-ai-pinecone-multimodal-retrieval
   ArtifactBucketName:
     Type: String
     Default: mlopswithsagemaker111
@@ -16,7 +16,7 @@ Parameters:
     Default: arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36
   RepositoryId:
     Type: String
-    Default: kalla86840/awspineconeduplicateorsimilaritydetection
+    Default: kalla86840/awspineconemultimodalretrieval
   BranchName:
     Type: String
     Default: main
