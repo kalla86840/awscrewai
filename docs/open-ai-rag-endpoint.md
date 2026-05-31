@@ -71,7 +71,7 @@ aws cloudformation deploy \
     PipelineName=open-ai-pinecone-duplicate-detection \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awspineconeduplicateorsimilaritydetection \
+    RepositoryId=kalla86840/awspineconeragforchatbotsandassistants \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
@@ -86,6 +86,16 @@ aws cloudformation deploy \
 ```
 
 The pipeline name is `open-ai-pinecone-duplicate-detection`. It deploys the `open-ai-pinecone-duplicate-detection-endpoint` stack. Use the `EndpointUrl` output for real-time inference.
+
+## Validated Pipeline Configuration
+
+The working pipeline uses the dedicated
+`open-ai-pinecone-duplicate-detection-1024` index with
+`PineconeDimension=1024`, `PineconeIndexHost=""`, and
+`PineconeUpsertOnQuery=true`. This keeps the OpenAI embedding size aligned with
+the Pinecone index, allows the endpoint to create or reuse the named index, and
+seeds the bundled RAG documents before CodeBuild runs its real-time endpoint
+smoke checks.
 
 Run the Pinecone recommendation systems task:
 

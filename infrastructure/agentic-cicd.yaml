@@ -15,7 +15,7 @@ Parameters:
     Description: CodeConnections connection ARN for the GitHub repository.
   RepositoryId:
     Type: String
-    Default: kalla86840/awspineconemultimodalretrieval
+    Default: kalla86840/awspineconeragforchatbotsandassistants
     Description: Repository identifier, for example owner/repository.
   BranchName:
     Type: String

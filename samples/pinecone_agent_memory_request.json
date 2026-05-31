@@ -10,6 +10,6 @@
   "top_k": 3,
   "metadata": {
     "environment": "ci",
-    "project": "awspineconeduplicateorsimilaritydetection"
+    "project": "awspineconeragforchatbotsandassistants"
   }
 }

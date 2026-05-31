@@ -17,6 +17,16 @@ The endpoint recommends similar records by embedding a `seed_text`, known
 Pinecone `seed_id`, or user interest profile and querying the
 `open-ai-pinecone-duplicate-detection-1024` Pinecone index in real time.
 
+## Validated Pipeline Configuration
+
+The successful CodePipeline deployment uses the dedicated
+`open-ai-pinecone-duplicate-detection-1024` Pinecone index. The Lambda endpoint,
+CodeBuild environment, CloudFormation templates, and deployment examples all
+use `PINECONE_DIMENSION=1024`. CI leaves `PINECONE_INDEX_HOST` empty so the
+endpoint creates or uses the correctly dimensioned index by name, seeds the
+bundled RAG documents, and verifies the real-time Lambda Function URL with
+recommendation and semantic-search smoke tests.
+
 The local detector is still available for finding exact duplicate files and
 near-similar text/code files across generated packages:
 
@@ -263,7 +273,7 @@ The AWS defaults currently filled in are:
 - Region: `us-west-1`
 - Artifact bucket: `mlopswithsagemaker111`
 - CodeStar connection: `arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36`
-- GitHub repository: `kalla86840/awspineconemultimodalretrieval`
+- GitHub repository: `kalla86840/awspineconeragforchatbotsandassistants`
 - OpenAI secret ARN: `arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ`
 - Pinecone secret ARN: `arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra`
 - Pinecone index: `open-ai-pinecone-duplicate-detection-1024`
@@ -326,7 +336,7 @@ aws cloudformation deploy \
     PipelineName=open-ai-pinecone-duplicate-detection \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awspineconemultimodalretrieval \
+    RepositoryId=kalla86840/awspineconeragforchatbotsandassistants \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
@@ -412,7 +422,7 @@ aws cloudformation deploy \
     ProjectName=agentic-open-ai \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awspineconemultimodalretrieval \
+    RepositoryId=kalla86840/awspineconeragforchatbotsandassistants \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2
