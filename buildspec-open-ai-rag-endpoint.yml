@@ -70,8 +70,17 @@ phases:
             DuplicateScoreThreshold="$DUPLICATE_SCORE_THRESHOLD" \
             SimilarityScoreThreshold="$SIMILARITY_SCORE_THRESHOLD" \
             OpenAIModel="$OPENAI_MODEL"
+      - |
+        aws lambda update-function-code \
+          --region "$AWS_REGION" \
+          --function-name "${PROJECT_NAME}-endpoint" \
+          --s3-bucket "$ARTIFACT_BUCKET" \
+          --s3-key open-ai-pinecone-duplicate-detection/open-ai-pinecone-duplicate-detection-endpoint.zip
+      - aws lambda wait function-updated --region "$AWS_REGION" --function-name "${PROJECT_NAME}-endpoint"
       - aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs" --output table
       - ENDPOINT_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='EndpointUrl'].OutputValue | [0]" --output text)
+      - 'curl -sS -f "$ENDPOINT_URL" -o chat-interface.html'
+      - python -c "body=open('chat-interface.html', encoding='utf-8').read(); assert 'Pinecone Support Assistant' in body and 'chat-form' in body, body; print('Browser chat interface smoke test passed')"
       - 'curl -sS -X POST "$ENDPOINT_URL" -H "content-type: application/json" -d @samples/pinecone_duplicate_similarity_request.json -o pinecone-duplicate-similarity-response.json'
       - cat pinecone-duplicate-similarity-response.json
       - python -c "import json; body=json.load(open('pinecone-duplicate-similarity-response.json')); ok='error' not in body and body.get('retrieval_source') == 'pinecone' and body.get('matches') is not None; print(json.dumps(body, indent=2)); print('Pinecone duplicate/similarity smoke status:', 'passed' if ok else 'diagnostic-only')"
@@ -82,6 +91,7 @@ phases:
 artifacts:
   files:
     - open-ai-pinecone-duplicate-detection-endpoint.zip
+    - chat-interface.html
     - pinecone-duplicate-similarity-response.json
     - pinecone-semantic-search-response.json
 
