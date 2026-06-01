@@ -6,6 +6,7 @@ from collections import Counter
 from pathlib import Path
 
 KNOWLEDGE_PATH = Path(os.environ.get("RAG_KNOWLEDGE_PATH", "knowledge/open_ai_rag_knowledge.txt"))
+CHAT_UI_PATH = Path(os.environ.get("CHAT_UI_PATH", "chat.html"))
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.2")
 OPENAI_EMBEDDING_MODEL = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
 OPENAI_API_KEY_SECRET_ARN = os.environ.get("OPENAI_API_KEY_SECRET_ARN")
@@ -151,7 +152,7 @@ def get_pinecone_index():
 
 def upsert_documents_to_pinecone(openai_client, index, documents):
     global _PINECONE_INDEXED
-    if _PINECONE_INDEXED:
+    if _PINECONE_INDEXED or not documents:
         return
     embeddings = embed_texts(openai_client, [f"{document['title']}\n{document['content']}" for document in documents])
     vectors = []
@@ -678,8 +679,19 @@ def response(status_code, body):
     return {"statusCode": status_code, "headers": {"content-type": "application/json", "access-control-allow-origin": "*"}, "body": json.dumps(body)}
 
 
+def html_response(path=None):
+    return {
+        "statusCode": 200,
+        "headers": {"content-type": "text/html; charset=utf-8"},
+        "body": Path(path or CHAT_UI_PATH).read_text(encoding="utf-8"),
+    }
+
+
 def handler(event, context):
     try:
+        http_method = event.get("requestContext", {}).get("http", {}).get("method")
+        if http_method == "GET":
+            return html_response()
         body = event.get("body", event)
         if isinstance(body, str):
             if event.get("isBase64Encoded"):

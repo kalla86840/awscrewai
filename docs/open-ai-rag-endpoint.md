@@ -2,9 +2,13 @@
 
 This endpoint is a real-time AWS Lambda Function URL for OpenAI-backed multi-agent RAG inference. It retrieves context from a bundled `.txt` file, calls multiple OpenAI agents with the retrieved sections, and returns a final answer with agent outputs, steps, safety notes, citations, and retrieved context.
 
+Open the Lambda Function URL directly in a browser to use the chat interface.
+Use `POST` requests against the same URL for programmatic integrations.
+
 ## Files
 
 - `rag_endpoint/app.py`: Lambda handler and retrieval logic.
+- `rag_endpoint/chat.html`: Browser chat interface served by the Lambda Function URL.
 - `rag_endpoint/knowledge/open_ai_rag_knowledge.txt`: Plain text RAG source file.
 - `rag_endpoint/requirements.txt`: Lambda package dependencies.
 - `infrastructure/open-ai-rag-endpoint.yaml`: Lambda Function URL CloudFormation template.

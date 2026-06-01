@@ -149,6 +149,7 @@ Resources:
         AllowOrigins:
           - "*"
         AllowMethods:
+          - GET
           - POST
         AllowHeaders:
           - content-type

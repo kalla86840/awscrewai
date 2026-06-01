@@ -38,6 +38,7 @@ phases:
       - export PINECONE_DIMENSION="1024"
       - export PINECONE_UPSERT_ON_QUERY="true"
       - cp rag_endpoint/app.py package/app.py
+      - cp rag_endpoint/chat.html package/chat.html
       - mkdir -p package/knowledge
       - cp rag_endpoint/knowledge/open_ai_rag_knowledge.txt package/knowledge/open_ai_rag_knowledge.txt
       - cd package

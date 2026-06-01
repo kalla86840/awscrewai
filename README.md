@@ -58,10 +58,14 @@ GitHub repository
 
 This endpoint answers questions from a bundled `.txt` user manual using multiple OpenAI agents. The Lambda loads `rag_endpoint/knowledge/open_ai_rag_knowledge.txt`, splits it into retrievable sections, embeds sections with OpenAI, upserts them into Pinecone, retrieves the most relevant sections for the user question, runs three agents over that retrieved context, and returns a final synthesized answer.
 
+Open the deployed Lambda Function URL in a browser to use the chat interface.
+The same URL accepts `POST` requests for API integrations and terminal tests.
+
 Runtime files:
 
 ```text
 rag_endpoint/app.py
+rag_endpoint/chat.html
 rag_endpoint/requirements.txt
 rag_endpoint/knowledge/open_ai_rag_knowledge.txt
 ```
