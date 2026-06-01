@@ -161,6 +161,14 @@ Resources:
       Principal: "*"
       FunctionUrlAuthType: NONE
 
+  RagEndpointInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref RagEndpointFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
 Outputs:
   EndpointUrl:
     Value: !GetAtt RagEndpointUrl.FunctionUrl
