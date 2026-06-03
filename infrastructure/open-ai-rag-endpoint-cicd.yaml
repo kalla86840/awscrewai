@@ -1,13 +1,13 @@
 ﻿AWSTemplateFormatVersion: "2010-09-09"
-Description: CodePipeline for packaging and deploying the OpenAI and Pinecone duplicate/similarity detection real-time endpoint.
+Description: CodePipeline for packaging and deploying the AWS MCP Ops OpenAI/Pinecone real-time inference endpoint.
 
 Parameters:
   ProjectName:
     Type: String
-    Default: open-ai-pinecone-duplicate-detection
+    Default: awsmcpops
   PipelineName:
     Type: String
-    Default: open-ai-pinecone-duplicate-detection
+    Default: awsmcpops-realtime-inference
   ArtifactBucketName:
     Type: String
     Default: mlopswithsagemaker111
@@ -16,7 +16,7 @@ Parameters:
     Default: arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36
   RepositoryId:
     Type: String
-    Default: kalla86840/awspineconeragforchatbotsandassistants
+    Default: kalla86840/awsmcpops
   BranchName:
     Type: String
     Default: main
@@ -28,7 +28,7 @@ Parameters:
     Default: arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra
   PineconeIndexName:
     Type: String
-    Default: open-ai-pinecone-duplicate-detection-1024
+    Default: awsmcpops-realtime-inference-1024
   PineconeIndexHost:
     Type: String
     Default: ""

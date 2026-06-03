@@ -1,6 +1,12 @@
 ﻿# Build Agentic RAG Pipeline
 
-This repository contains AWS CI/CD pipelines for OpenAI-backed real-time RAG endpoints.
+This repository contains AWS CI/CD pipelines for OpenAI-backed real-time RAG endpoints. The primary GitHub source is configured for `kalla86840/awsmcpops`, with AWS CodePipeline packaging and deploying a Lambda Function URL inference endpoint.
+
+Start here for the AWS MCP Ops deployment path:
+
+```text
+docs/aws-mcp-ops-codepipeline.md
+```
 
 It now includes two deployable endpoint paths:
 
@@ -15,12 +21,12 @@ target Pinecone index must also be created with dimension `1024`.
 
 The endpoint recommends similar records by embedding a `seed_text`, known
 Pinecone `seed_id`, or user interest profile and querying the
-`open-ai-pinecone-duplicate-detection-1024` Pinecone index in real time.
+`awsmcpops-realtime-inference-1024` Pinecone index in real time.
 
 ## Validated Pipeline Configuration
 
 The successful CodePipeline deployment uses the dedicated
-`open-ai-pinecone-duplicate-detection-1024` Pinecone index. The Lambda endpoint,
+`awsmcpops-realtime-inference-1024` Pinecone index. The Lambda endpoint,
 CodeBuild environment, CloudFormation templates, and deployment examples all
 use `PINECONE_DIMENSION=1024`. CI leaves `PINECONE_INDEX_HOST` empty so the
 endpoint creates or uses the correctly dimensioned index by name, seeds the
@@ -231,7 +237,7 @@ Agent sequence:
 
 The endpoint response includes `agents`, `answer`, `steps`, `safety_notes`, `citations`, `agent_consensus`, and `retrieved_context`.
 
-After deployment, get the URL from the `open-ai-pinecone-duplicate-detection-endpoint` CloudFormation stack output named `EndpointUrl`. The CodePipeline name is `open-ai-pinecone-duplicate-detection`.
+After deployment, get the URL from the `awsmcpops-realtime-inference-endpoint` CloudFormation stack output named `EndpointUrl`. The CodePipeline name is `awsmcpops-realtime-inference`.
 
 ## Agentic Hospital RAG Endpoint
 
@@ -277,10 +283,10 @@ The AWS defaults currently filled in are:
 - Region: `us-west-1`
 - Artifact bucket: `mlopswithsagemaker111`
 - CodeStar connection: `arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36`
-- GitHub repository: `kalla86840/awspineconeragforchatbotsandassistants`
+- GitHub repository: `kalla86840/awsmcpops`
 - OpenAI secret ARN: `arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ`
 - Pinecone secret ARN: `arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra`
-- Pinecone index: `open-ai-pinecone-duplicate-detection-1024`
+- Pinecone index: `awsmcpops-realtime-inference-1024`
 - Pinecone host: empty by default so the endpoint creates/uses the named 1024-dimensional index.
 - Pinecone namespace: `news`
 - Pinecone memory namespace: `agent-memory`
@@ -333,18 +339,18 @@ aws secretsmanager describe-secret \
 aws cloudformation deploy \
   --region us-west-1 \
   --template-file infrastructure/open-ai-rag-endpoint-cicd.yaml \
-  --stack-name open-ai-pinecone-duplicate-detection-cicd \
+  --stack-name awsmcpops-realtime-inference-pipeline \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=open-ai-pinecone-duplicate-detection \
-    PipelineName=open-ai-pinecone-duplicate-detection \
+    ProjectName=awsmcpops \
+    PipelineName=awsmcpops-realtime-inference \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awspineconeragforchatbotsandassistants \
+    RepositoryId=kalla86840/awsmcpops \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
-    PineconeIndexName=open-ai-pinecone-duplicate-detection-1024 \
+    PineconeIndexName=awsmcpops-realtime-inference-1024 \
     PineconeIndexHost="" \
     PineconeNamespace=news \
     PineconeMemoryNamespace=agent-memory \
@@ -426,7 +432,7 @@ aws cloudformation deploy \
     ProjectName=agentic-open-ai \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awspineconeragforchatbotsandassistants \
+    RepositoryId=kalla86840/awsmcpops \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2

@@ -5,12 +5,12 @@ env:
     AWS_DEFAULT_REGION: us-west-1
     AWS_REGION: us-west-1
     ARTIFACT_BUCKET: mlopswithsagemaker111
-    STACK_NAME: open-ai-pinecone-duplicate-detection-endpoint
-    PROJECT_NAME: open-ai-pinecone-duplicate-detection
+    STACK_NAME: awsmcpops-realtime-inference-endpoint
+    PROJECT_NAME: awsmcpops
     OPENAI_MODEL: gpt-5.2
     OPENAI_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ
     PINECONE_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra
-    PINECONE_INDEX_NAME: open-ai-pinecone-duplicate-detection-1024
+    PINECONE_INDEX_NAME: awsmcpops-realtime-inference-1024
     PINECONE_INDEX_HOST: ""
     PINECONE_NAMESPACE: news
     PINECONE_MEMORY_NAMESPACE: agent-memory
@@ -33,7 +33,7 @@ phases:
       - pip install -r rag_endpoint/requirements.txt -t package
   build:
     commands:
-      - export PINECONE_INDEX_NAME="open-ai-pinecone-duplicate-detection-1024"
+      - export PINECONE_INDEX_NAME="${PINECONE_INDEX_NAME:-awsmcpops-realtime-inference-1024}"
       - export PINECONE_INDEX_HOST=""
       - export PINECONE_DIMENSION="1024"
       - export PINECONE_UPSERT_ON_QUERY="true"
@@ -42,9 +42,9 @@ phases:
       - mkdir -p package/knowledge
       - cp rag_endpoint/knowledge/open_ai_rag_knowledge.txt package/knowledge/open_ai_rag_knowledge.txt
       - cd package
-      - zip -r ../open-ai-pinecone-duplicate-detection-endpoint.zip .
+      - zip -r ../awsmcpops-endpoint.zip .
       - cd ..
-      - aws s3 cp open-ai-pinecone-duplicate-detection-endpoint.zip "s3://${ARTIFACT_BUCKET}/open-ai-pinecone-duplicate-detection/open-ai-pinecone-duplicate-detection-endpoint.zip"
+      - aws s3 cp awsmcpops-endpoint.zip "s3://${ARTIFACT_BUCKET}/${PROJECT_NAME}/${PROJECT_NAME}-endpoint.zip"
       - |
         aws cloudformation deploy \
           --region "$AWS_REGION" \
@@ -54,7 +54,7 @@ phases:
           --parameter-overrides \
             ProjectName="$PROJECT_NAME" \
             ArtifactBucketName="$ARTIFACT_BUCKET" \
-            LambdaZipKey=open-ai-pinecone-duplicate-detection/open-ai-pinecone-duplicate-detection-endpoint.zip \
+            LambdaZipKey="${PROJECT_NAME}/${PROJECT_NAME}-endpoint.zip" \
             OpenAIApiKeySecretArn="$OPENAI_API_KEY_SECRET_ARN" \
             PineconeApiKeySecretArn="$PINECONE_API_KEY_SECRET_ARN" \
             PineconeIndexName="$PINECONE_INDEX_NAME" \
@@ -75,7 +75,7 @@ phases:
           --region "$AWS_REGION" \
           --function-name "${PROJECT_NAME}-endpoint" \
           --s3-bucket "$ARTIFACT_BUCKET" \
-          --s3-key open-ai-pinecone-duplicate-detection/open-ai-pinecone-duplicate-detection-endpoint.zip
+          --s3-key "${PROJECT_NAME}/${PROJECT_NAME}-endpoint.zip"
       - aws lambda wait function-updated --region "$AWS_REGION" --function-name "${PROJECT_NAME}-endpoint"
       - aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs" --output table
       - ENDPOINT_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='EndpointUrl'].OutputValue | [0]" --output text)
@@ -90,7 +90,7 @@ phases:
 
 artifacts:
   files:
-    - open-ai-pinecone-duplicate-detection-endpoint.zip
+    - awsmcpops-endpoint.zip
     - chat-interface.html
     - pinecone-duplicate-similarity-response.json
     - pinecone-semantic-search-response.json

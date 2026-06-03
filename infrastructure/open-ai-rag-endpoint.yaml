@@ -1,16 +1,16 @@
 ﻿AWSTemplateFormatVersion: "2010-09-09"
-Description: Real-time AWS Lambda Function URL endpoint for OpenAI and Pinecone duplicate/similarity detection.
+Description: Real-time AWS Lambda Function URL endpoint for AWS MCP Ops OpenAI/Pinecone inferencing.
 
 Parameters:
   ProjectName:
     Type: String
-    Default: open-ai-pinecone-duplicate-detection
+    Default: awsmcpops
   ArtifactBucketName:
     Type: String
     Default: mlopswithsagemaker111
   LambdaZipKey:
     Type: String
-    Default: open-ai-pinecone-duplicate-detection/open-ai-pinecone-duplicate-detection-endpoint.zip
+    Default: awsmcpops/awsmcpops-endpoint.zip
   OpenAIApiKeySecretArn:
     Type: String
     Default: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ
@@ -21,7 +21,7 @@ Parameters:
     Description: AWS Secrets Manager secret ARN whose value is the Pinecone API key.
   PineconeIndexName:
     Type: String
-    Default: open-ai-pinecone-duplicate-detection-1024
+    Default: awsmcpops-realtime-inference-1024
   PineconeIndexHost:
     Type: String
     Default: ""

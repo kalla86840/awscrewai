@@ -1,11 +1,11 @@
 [
   {
     "ParameterKey": "ProjectName",
-    "ParameterValue": "open-ai-pinecone-duplicate-detection"
+    "ParameterValue": "awsmcpops"
   },
   {
     "ParameterKey": "PipelineName",
-    "ParameterValue": "open-ai-pinecone-duplicate-detection"
+    "ParameterValue": "awsmcpops-realtime-inference"
   },
   {
     "ParameterKey": "ArtifactBucketName",
@@ -17,7 +17,7 @@
   },
   {
     "ParameterKey": "RepositoryId",
-    "ParameterValue": "kalla86840/awspineconeragforchatbotsandassistants"
+    "ParameterValue": "kalla86840/awsmcpops"
   },
   {
     "ParameterKey": "BranchName",
@@ -33,7 +33,7 @@
   },
   {
     "ParameterKey": "PineconeIndexName",
-    "ParameterValue": "open-ai-pinecone-duplicate-detection-1024"
+    "ParameterValue": "awsmcpops-realtime-inference-1024"
   },
   {
     "ParameterKey": "PineconeIndexHost",
