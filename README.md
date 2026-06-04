@@ -1,6 +1,6 @@
 ﻿# Build Agentic RAG Pipeline
 
-This repository contains AWS CI/CD pipelines for CrewAI and OpenAI-backed real-time RAG endpoints. The primary agentic CodePipeline source is configured for `kalla86840/awscrewai`, with AWS CodePipeline packaging and deploying a Lambda Function URL inference endpoint.
+This repository contains AWS CI/CD pipelines for AutoGen and OpenAI-backed real-time RAG endpoints. The primary agentic CodePipeline source is configured for `kalla86840/awsautogen`, with AWS CodePipeline packaging and deploying a Lambda Function URL inference endpoint.
 
 Start here for the AWS MCP Ops deployment path:
 
@@ -11,7 +11,7 @@ docs/aws-mcp-ops-codepipeline.md
 It now includes two deployable endpoint paths:
 
 1. `rag_endpoint/`: a multi-agent OpenAI RAG Lambda Function URL that retrieves from a plain text knowledge file and applies multiple agents before returning an answer.
-2. `agentic_endpoint/`: an agentic hospital RAG Lambda Function URL that retrieves hospital context, runs three CrewAI agents backed by OpenAI, and returns a structured care-coordination inference.
+2. `agentic_endpoint/`: an agentic hospital RAG Lambda Function URL that retrieves hospital context, runs three AutoGen agents backed by OpenAI, and returns a structured care-coordination inference.
 
 ## Recommendation Systems
 
@@ -83,6 +83,40 @@ buildspec-open-ai-rag-endpoint.yml
 infrastructure/open-ai-rag-endpoint.yaml
 infrastructure/open-ai-rag-endpoint-cicd.yaml
 ```
+
+## AutoGen Hospital CodePipeline
+
+The deployable hospital endpoint lives in `agentic_endpoint/` and is wired to
+AWS CodePipeline through `infrastructure/agentic-cicd.yaml`. The pipeline pulls
+from `kalla86840/awsautogen`, packages the Python Lambda with OpenAI and
+AutoGen dependencies, deploys `infrastructure/agentic-endpoint.yaml`, and writes
+the produced real-time HTTPS Lambda Function URL to:
+
+```text
+dist/agentic-endpoint-url.txt
+dist/agentic-endpoint-metadata.json
+```
+
+Agent mapping:
+
+```text
+agent_1 -> hospital
+agent_2 -> doctor
+agent_3 -> nurse
+```
+
+Deploy the pipeline stack:
+
+```powershell
+aws cloudformation deploy `
+  --template-file infrastructure/agentic-cicd.yaml `
+  --stack-name agentic-open-ai-cicd `
+  --capabilities CAPABILITY_NAMED_IAM
+```
+
+The CodeBuild smoke test invokes the deployed Lambda with
+`samples/agentic_hospital_request.json` and requires a `200` response before the
+pipeline artifact is considered successful.
 
 Sample files:
 

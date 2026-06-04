@@ -1,5 +1,5 @@
 ﻿AWSTemplateFormatVersion: "2010-09-09"
-Description: CI/CD pipeline for the OpenAI agentic hospital real-time inference endpoint.
+Description: CI/CD pipeline for the AutoGen and OpenAI agentic hospital real-time inference endpoint.
 
 Parameters:
   ProjectName:
@@ -15,7 +15,7 @@ Parameters:
     Description: CodeConnections connection ARN for the GitHub repository.
   RepositoryId:
     Type: String
-    Default: kalla86840/awscrewai
+    Default: kalla86840/awsautogen
     Description: Repository identifier, for example owner/repository.
   BranchName:
     Type: String
