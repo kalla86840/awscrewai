@@ -36,7 +36,9 @@ rag_endpoint/knowledge/open_ai_rag_knowledge.txt
 AWS files:
 
 ```text
+.github/workflows/deploy-awsmcpops-endpoint.yml
 buildspec-open-ai-rag-endpoint.yml
+infrastructure/github-aws-oidc-role.yaml
 infrastructure/open-ai-rag-endpoint.yaml
 infrastructure/open-ai-rag-endpoint-cicd.yaml
 infrastructure/open-ai-rag-endpoint-cicd-parameters.example.json
@@ -107,3 +109,5 @@ For browser testing, open the same Function URL with `GET`; it serves the bundle
 ## Notes
 
 OpenAI model, embedding model, Pinecone index, namespace, and thresholds are environment-driven. Keep real API keys in Secrets Manager only; do not commit them to GitHub.
+
+For GitHub Actions deployment permissions, see `docs/github-aws-permissions.md`.

@@ -1,0 +1,166 @@
+name: Deploy AWS MCP Ops Endpoint
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_pipeline_stack:
+        description: Deploy/update the AWS CodePipeline stack before endpoint deployment.
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/deploy-awsmcpops-endpoint.yml"
+      - "rag_endpoint/**"
+      - "samples/**"
+      - "buildspec-open-ai-rag-endpoint.yml"
+      - "infrastructure/open-ai-rag-endpoint.yaml"
+      - "infrastructure/open-ai-rag-endpoint-cicd.yaml"
+      - "infrastructure/github-aws-oidc-role.yaml"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-west-1' }}
+  PROJECT_NAME: ${{ vars.PROJECT_NAME || 'awsmcpops' }}
+  ENDPOINT_STACK_NAME: ${{ vars.ENDPOINT_STACK_NAME || 'awsmcpops-realtime-inference-endpoint' }}
+  PIPELINE_STACK_NAME: ${{ vars.PIPELINE_STACK_NAME || 'awsmcpops-realtime-inference-pipeline' }}
+  ARTIFACT_BUCKET: ${{ vars.ARTIFACT_BUCKET }}
+  OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-5.2' }}
+  OPENAI_API_KEY_SECRET_ARN: ${{ secrets.OPENAI_API_KEY_SECRET_ARN }}
+  PINECONE_API_KEY_SECRET_ARN: ${{ secrets.PINECONE_API_KEY_SECRET_ARN }}
+  PINECONE_INDEX_NAME: ${{ vars.PINECONE_INDEX_NAME || 'awsmcpops-realtime-inference-1024' }}
+  PINECONE_INDEX_HOST: ${{ vars.PINECONE_INDEX_HOST || '' }}
+  PINECONE_NAMESPACE: ${{ vars.PINECONE_NAMESPACE || 'news' }}
+  PINECONE_MEMORY_NAMESPACE: ${{ vars.PINECONE_MEMORY_NAMESPACE || 'agent-memory' }}
+  PINECONE_DUPLICATE_NAMESPACE: ${{ vars.PINECONE_DUPLICATE_NAMESPACE || 'news' }}
+  PINECONE_CLASSIFICATION_NAMESPACE: ${{ vars.PINECONE_CLASSIFICATION_NAMESPACE || 'news' }}
+  PINECONE_CLUSTERING_NAMESPACE: ${{ vars.PINECONE_CLUSTERING_NAMESPACE || 'news' }}
+  PINECONE_MULTIMODAL_NAMESPACE: ${{ vars.PINECONE_MULTIMODAL_NAMESPACE || 'news' }}
+  PINECONE_DIMENSION: ${{ vars.PINECONE_DIMENSION || '1024' }}
+  PINECONE_UPSERT_ON_QUERY: ${{ vars.PINECONE_UPSERT_ON_QUERY || 'true' }}
+  DUPLICATE_SCORE_THRESHOLD: ${{ vars.DUPLICATE_SCORE_THRESHOLD || '0.98' }}
+  SIMILARITY_SCORE_THRESHOLD: ${{ vars.SIMILARITY_SCORE_THRESHOLD || '0.85' }}
+
+jobs:
+  deploy:
+    name: Package and deploy endpoint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate required configuration
+        shell: bash
+        run: |
+          test -n "$ARTIFACT_BUCKET" || (echo "Set repository variable ARTIFACT_BUCKET" && exit 1)
+          test -n "$OPENAI_API_KEY_SECRET_ARN" || (echo "Set repository secret OPENAI_API_KEY_SECRET_ARN" && exit 1)
+          test -n "$PINECONE_API_KEY_SECRET_ARN" || (echo "Set repository secret PINECONE_API_KEY_SECRET_ARN" && exit 1)
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Package Lambda artifact
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          rm -rf package awsmcpops-endpoint.zip
+          mkdir -p package/knowledge
+          pip install -r rag_endpoint/requirements.txt -t package
+          cp rag_endpoint/app.py package/app.py
+          cp rag_endpoint/chat.html package/chat.html
+          cp rag_endpoint/knowledge/open_ai_rag_knowledge.txt package/knowledge/open_ai_rag_knowledge.txt
+          (cd package && zip -r ../awsmcpops-endpoint.zip .)
+
+      - name: Upload Lambda artifact
+        shell: bash
+        run: |
+          aws s3 cp awsmcpops-endpoint.zip "s3://${ARTIFACT_BUCKET}/${PROJECT_NAME}/${PROJECT_NAME}-endpoint.zip"
+
+      - name: Deploy CodePipeline stack
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_pipeline_stack == 'true' }}
+        shell: bash
+        run: |
+          test -n "${{ secrets.CODESTAR_CONNECTION_ARN }}" || (echo "Set repository secret CODESTAR_CONNECTION_ARN to deploy the pipeline stack" && exit 1)
+          aws cloudformation deploy \
+            --region "$AWS_REGION" \
+            --template-file infrastructure/open-ai-rag-endpoint-cicd.yaml \
+            --stack-name "$PIPELINE_STACK_NAME" \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides \
+              ProjectName="$PROJECT_NAME" \
+              PipelineName="${PROJECT_NAME}-realtime-inference" \
+              ArtifactBucketName="$ARTIFACT_BUCKET" \
+              CodeStarConnectionArn="${{ secrets.CODESTAR_CONNECTION_ARN }}" \
+              RepositoryId="${{ github.repository }}" \
+              BranchName="${{ github.ref_name }}" \
+              OpenAIApiKeySecretArn="$OPENAI_API_KEY_SECRET_ARN" \
+              PineconeApiKeySecretArn="$PINECONE_API_KEY_SECRET_ARN" \
+              PineconeIndexName="$PINECONE_INDEX_NAME" \
+              PineconeIndexHost="$PINECONE_INDEX_HOST" \
+              PineconeNamespace="$PINECONE_NAMESPACE" \
+              PineconeMemoryNamespace="$PINECONE_MEMORY_NAMESPACE" \
+              PineconeDuplicateNamespace="$PINECONE_DUPLICATE_NAMESPACE" \
+              PineconeClassificationNamespace="$PINECONE_CLASSIFICATION_NAMESPACE" \
+              PineconeClusteringNamespace="$PINECONE_CLUSTERING_NAMESPACE" \
+              PineconeMultimodalNamespace="$PINECONE_MULTIMODAL_NAMESPACE" \
+              PineconeDimension="$PINECONE_DIMENSION" \
+              PineconeUpsertOnQuery="$PINECONE_UPSERT_ON_QUERY" \
+              DuplicateScoreThreshold="$DUPLICATE_SCORE_THRESHOLD" \
+              SimilarityScoreThreshold="$SIMILARITY_SCORE_THRESHOLD"
+
+      - name: Deploy real-time endpoint
+        shell: bash
+        run: |
+          aws cloudformation deploy \
+            --region "$AWS_REGION" \
+            --template-file infrastructure/open-ai-rag-endpoint.yaml \
+            --stack-name "$ENDPOINT_STACK_NAME" \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides \
+              ProjectName="$PROJECT_NAME" \
+              ArtifactBucketName="$ARTIFACT_BUCKET" \
+              LambdaZipKey="${PROJECT_NAME}/${PROJECT_NAME}-endpoint.zip" \
+              OpenAIApiKeySecretArn="$OPENAI_API_KEY_SECRET_ARN" \
+              PineconeApiKeySecretArn="$PINECONE_API_KEY_SECRET_ARN" \
+              PineconeIndexName="$PINECONE_INDEX_NAME" \
+              PineconeIndexHost="$PINECONE_INDEX_HOST" \
+              PineconeNamespace="$PINECONE_NAMESPACE" \
+              PineconeMemoryNamespace="$PINECONE_MEMORY_NAMESPACE" \
+              PineconeDuplicateNamespace="$PINECONE_DUPLICATE_NAMESPACE" \
+              PineconeClassificationNamespace="$PINECONE_CLASSIFICATION_NAMESPACE" \
+              PineconeClusteringNamespace="$PINECONE_CLUSTERING_NAMESPACE" \
+              PineconeMultimodalNamespace="$PINECONE_MULTIMODAL_NAMESPACE" \
+              PineconeDimension="$PINECONE_DIMENSION" \
+              PineconeUpsertOnQuery="$PINECONE_UPSERT_ON_QUERY" \
+              DuplicateScoreThreshold="$DUPLICATE_SCORE_THRESHOLD" \
+              SimilarityScoreThreshold="$SIMILARITY_SCORE_THRESHOLD" \
+              OpenAIModel="$OPENAI_MODEL"
+
+      - name: Smoke test endpoint URL
+        shell: bash
+        run: |
+          ENDPOINT_URL="$(aws cloudformation describe-stacks \
+            --region "$AWS_REGION" \
+            --stack-name "$ENDPOINT_STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='EndpointUrl'].OutputValue | [0]" \
+            --output text)"
+          echo "EndpointUrl=${ENDPOINT_URL}" >> "$GITHUB_STEP_SUMMARY"
+          curl -sS -f "$ENDPOINT_URL" -o chat-interface.html
+          python -c "body=open('chat-interface.html', encoding='utf-8').read(); assert 'chat-form' in body; print('chat interface ok')"
