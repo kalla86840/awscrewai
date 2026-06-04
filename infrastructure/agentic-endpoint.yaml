@@ -17,6 +17,13 @@ Parameters:
   OpenAIModel:
     Type: String
     Default: gpt-5.2
+  FunctionUrlAuthType:
+    Type: String
+    Default: NONE
+    AllowedValues:
+      - NONE
+      - AWS_IAM
+    Description: Use NONE for a directly callable real-time HTTPS endpoint, or AWS_IAM for signed requests.
 
 Resources:
   AgenticFunctionRole:
@@ -70,7 +77,7 @@ Resources:
     Type: AWS::Lambda::Url
     Properties:
       TargetFunctionArn: !Ref AgenticFunction
-      AuthType: AWS_IAM
+      AuthType: !Ref FunctionUrlAuthType
       Cors:
         AllowOrigins:
           - "*"
@@ -88,7 +95,7 @@ Resources:
       FunctionName: !Ref AgenticFunction
       Action: lambda:InvokeFunctionUrl
       Principal: "*"
-      FunctionUrlAuthType: AWS_IAM
+      FunctionUrlAuthType: !Ref FunctionUrlAuthType
 
 Outputs:
   AgenticFunctionName:

@@ -8,9 +8,20 @@ import boto3
 import yaml
 from openai import OpenAI
 
+try:
+    from crewai import Agent, Crew, LLM, Process, Task
+except ImportError:  # Allows fast local contract tests without the full Lambda dependency set.
+    Agent = Crew = LLM = Process = Task = None
+
 
 PROFILE_PATH = Path(__file__).with_name("agent_profiles.yaml")
 DEFAULT_RAG_PATH = Path(__file__).with_name("hospital_agentic_rag_knowledge.txt")
+AGENT_ALIASES = {
+    "agent_1": "hospital",
+    "agent_2": "doctor",
+    "agent_3": "nurse",
+}
+DEFAULT_AGENT_SEQUENCE = ["agent_1", "agent_2", "agent_3"]
 
 AGENT_OUTPUT_SCHEMA = {
     "type": "object",
@@ -127,6 +138,18 @@ def parse_body(event):
     return body or {}
 
 
+def resolve_agent_name(agent_name):
+    normalized = str(agent_name).strip().lower().replace("-", "_").replace(" ", "_")
+    return AGENT_ALIASES.get(normalized, normalized)
+
+
+def agent_label_for_role(role):
+    for label, mapped_role in AGENT_ALIASES.items():
+        if mapped_role == role:
+            return label
+    return role
+
+
 def get_openai_api_key():
     direct_key = os.getenv("OPENAI_API_KEY")
     if direct_key:
@@ -156,6 +179,98 @@ def build_agent_input(payload, prior_outputs, retrieved_context):
         },
         indent=2,
     )
+
+
+def _extract_json_object(text):
+    if isinstance(text, dict):
+        return text
+
+    raw = str(text).strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```(?:json)?\s*", "", raw)
+        raw = re.sub(r"\s*```$", "", raw)
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", raw, flags=re.DOTALL)
+        if not match:
+            raise
+        return json.loads(match.group(0))
+
+
+def _crew_output_text(output):
+    if hasattr(output, "raw"):
+        return output.raw
+    return str(output)
+
+
+def crewai_is_available():
+    return all(component is not None for component in (Agent, Crew, LLM, Process, Task))
+
+
+def build_llm(model, api_key):
+    if not crewai_is_available():
+        return None
+    return LLM(model=f"openai/{model}", api_key=api_key)
+
+
+def run_crewai_agent(agent_name, profile, payload, prior_outputs, retrieved_context, max_output_tokens, api_key):
+    model = payload.get("model") or profile.get("model") or os.getenv("OPENAI_MODEL", "gpt-5.2")
+    llm = build_llm(model, api_key)
+    agent = Agent(
+        role=f"{agent_name.title()} real-time inference agent",
+        goal="Produce a grounded JSON care-coordination assessment for the endpoint.",
+        backstory=profile["instructions"],
+        llm=llm,
+        allow_delegation=False,
+        verbose=False,
+    )
+    task = Task(
+        description=(
+            "Analyze this real-time endpoint payload and return only a JSON object matching this schema: "
+            f"{json.dumps(AGENT_OUTPUT_SCHEMA)}\n\n"
+            f"Input:\n{build_agent_input(payload, prior_outputs, retrieved_context)}\n\n"
+            f"Keep the response under {max_output_tokens} output tokens."
+        ),
+        expected_output="A strict JSON object with summary, findings, next_actions, and risk_level.",
+        agent=agent,
+    )
+    output = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False).kickoff()
+    return _extract_json_object(_crew_output_text(output))
+
+
+def run_crewai_final_inference(payload, agent_outputs, retrieved_context, max_output_tokens, api_key):
+    model = payload.get("model") or os.getenv("OPENAI_MODEL", "gpt-5.2")
+    llm = build_llm(model, api_key)
+    coordinator = Agent(
+        role="Care coordination synthesis agent",
+        goal="Synthesize specialist agent findings into a single real-time endpoint inference.",
+        backstory=(
+            "You coordinate OpenAI and CrewAI agent outputs for a hospital operations endpoint. "
+            "You ground the response in retrieved context, avoid diagnosis, and return JSON only."
+        ),
+        llm=llm,
+        allow_delegation=False,
+        verbose=False,
+    )
+    task = Task(
+        description=(
+            "Return only a JSON object matching this inference schema: "
+            f"{json.dumps(payload.get('response_schema') or INFERENCE_SCHEMA)}\n\n"
+            f"Payload:\n{json.dumps(payload, indent=2)}\n\n"
+            f"Retrieved context:\n{json.dumps(retrieved_context, indent=2)}\n\n"
+            f"Agent outputs:\n{json.dumps(agent_outputs, indent=2)}\n\n"
+            f"Keep the response under {max_output_tokens} output tokens."
+        ),
+        expected_output=(
+            "A strict JSON object with case_summary, care_team_consensus, recommended_actions, "
+            "signals_to_monitor, escalation_level, and handoff."
+        ),
+        agent=coordinator,
+    )
+    output = Crew(agents=[coordinator], tasks=[task], process=Process.sequential, verbose=False).kickoff()
+    return _extract_json_object(_crew_output_text(output))
 
 
 def call_agent(client, agent_name, profile, payload, prior_outputs, retrieved_context, max_output_tokens):
@@ -213,43 +328,64 @@ def lambda_handler(event, context):
         payload = parse_body(event)
         profiles = load_profiles()
         max_output_tokens = int(payload.get("max_output_tokens") or os.getenv("MAX_OUTPUT_TOKENS", "1400"))
-        requested_agents = payload.get("agents") or ["hospital", "doctor", "nurse"]
+        requested_agents = payload.get("agents") or DEFAULT_AGENT_SEQUENCE
         retrieved_context = retrieve_context(payload)
 
-        client = OpenAI(api_key=get_openai_api_key())
+        api_key = get_openai_api_key()
+        use_crewai = payload.get("use_crewai", True) is not False and crewai_is_available()
+        client = None if use_crewai else OpenAI(api_key=api_key)
         agent_outputs = []
-        for agent_name in requested_agents:
+        for requested_agent in requested_agents:
+            agent_name = resolve_agent_name(requested_agent)
+            agent_id = agent_label_for_role(agent_name)
             profile = profiles.get(agent_name)
             if profile is None:
                 return response(
                     400,
                     {
-                        "error": f"Unknown agent '{agent_name}'.",
+                        "error": f"Unknown agent '{requested_agent}'.",
+                        "agent_aliases": AGENT_ALIASES,
                         "available_agents": sorted(profiles.keys()),
                     },
                 )
 
-            agent_result = call_agent(
-                client,
-                agent_name,
-                profile,
-                payload,
-                agent_outputs,
-                retrieved_context,
-                max_output_tokens,
-            )
+            if use_crewai:
+                agent_result = run_crewai_agent(
+                    agent_name,
+                    profile,
+                    payload,
+                    agent_outputs,
+                    retrieved_context,
+                    max_output_tokens,
+                    api_key,
+                )
+            else:
+                agent_result = call_agent(
+                    client,
+                    agent_name,
+                    profile,
+                    payload,
+                    agent_outputs,
+                    retrieved_context,
+                    max_output_tokens,
+                )
             agent_outputs.append(
                 {
+                    "agent_id": agent_id,
                     "agent": agent_name,
                     "result": agent_result,
                 }
             )
 
-        inference = run_final_inference(client, payload, agent_outputs, retrieved_context, max_output_tokens)
+        if use_crewai:
+            inference = run_crewai_final_inference(payload, agent_outputs, retrieved_context, max_output_tokens, api_key)
+        else:
+            inference = run_final_inference(client, payload, agent_outputs, retrieved_context, max_output_tokens)
         return response(
             200,
             {
                 "task": payload.get("task", "Create an agentic hospital care-coordination inference."),
+                "orchestrator": "crewai" if use_crewai else "openai-responses",
                 "retrieved_context": retrieved_context,
                 "agents": agent_outputs,
                 "inference": inference,

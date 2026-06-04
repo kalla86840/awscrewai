@@ -1,6 +1,6 @@
 ﻿# Build Agentic RAG Pipeline
 
-This repository contains AWS CI/CD pipelines for OpenAI-backed real-time RAG endpoints. The primary GitHub source is configured for `kalla86840/awsmcpops`, with AWS CodePipeline packaging and deploying a Lambda Function URL inference endpoint.
+This repository contains AWS CI/CD pipelines for CrewAI and OpenAI-backed real-time RAG endpoints. The primary agentic CodePipeline source is configured for `kalla86840/awscrewai`, with AWS CodePipeline packaging and deploying a Lambda Function URL inference endpoint.
 
 Start here for the AWS MCP Ops deployment path:
 
@@ -11,7 +11,7 @@ docs/aws-mcp-ops-codepipeline.md
 It now includes two deployable endpoint paths:
 
 1. `rag_endpoint/`: a multi-agent OpenAI RAG Lambda Function URL that retrieves from a plain text knowledge file and applies multiple agents before returning an answer.
-2. `agentic_endpoint/`: an agentic hospital RAG Lambda Function URL that retrieves hospital context, runs three OpenAI agents, and returns a structured care-coordination inference.
+2. `agentic_endpoint/`: an agentic hospital RAG Lambda Function URL that retrieves hospital context, runs three CrewAI agents backed by OpenAI, and returns a structured care-coordination inference.
 
 ## Recommendation Systems
 

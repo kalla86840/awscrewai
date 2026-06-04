@@ -1,6 +1,6 @@
-﻿# OpenAI Agentic Hospital Endpoint
+# OpenAI Agentic Hospital Endpoint
 
-This endpoint creates a real-time agentic RAG inference workflow for hospital coordination. It receives a hospital event, retrieves relevant context from a packaged text file, runs three OpenAI-backed agents, and returns structured JSON for care coordination.
+This endpoint creates a real-time agentic RAG inference workflow for hospital coordination. It receives a hospital event, retrieves relevant context from a packaged text file, runs three CrewAI agents backed by OpenAI, and returns structured JSON for care coordination.
 
 ## Files
 
@@ -17,6 +17,7 @@ This endpoint creates a real-time agentic RAG inference workflow for hospital co
 
 ```json
 {
+  "agents": ["agent_1", "agent_2", "agent_3"],
   "patient_context": {
     "age": 64,
     "location": "emergency department",
@@ -41,9 +42,9 @@ This endpoint creates a real-time agentic RAG inference workflow for hospital co
 
 The default agent sequence is:
 
-- `hospital`: operational intake and coordination gaps.
-- `doctor`: clinical review and escalation considerations.
-- `nurse`: bedside handoff, monitoring priorities, and practical next actions.
+- `agent_1` / `hospital`: operational intake and coordination gaps.
+- `agent_2` / `doctor`: clinical review and escalation considerations.
+- `agent_3` / `nurse`: bedside handoff, monitoring priorities, and practical next actions.
 
 The endpoint retrieves relevant RAG sections and passes them to every agent. It then runs a final coordinator pass that returns `retrieved_context`, agent outputs, and a structured inference with `case_summary`, `care_team_consensus`, `recommended_actions`, `signals_to_monitor`, `escalation_level`, and `handoff`.
 
@@ -60,11 +61,12 @@ aws cloudformation deploy \
     ProjectName=agentic-open-ai \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awspineconeragforchatbotsandassistants \
+    RepositoryId=kalla86840/awscrewai \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2
 ```
 
-The pipeline is named `agentic-open-ai`. It creates a CodeBuild project named `agentic-open-ai-agentic-deploy`. CodeBuild packages the Lambda artifact and deploys `infrastructure/agentic-endpoint.yaml`.
+The pipeline is named `agentic-open-ai`. It creates a CodeBuild project named `agentic-open-ai-agentic-deploy`. CodeBuild packages the Lambda artifact, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
 
+By default, the Lambda Function URL uses `FunctionUrlAuthType=NONE` so the pipeline produces a directly callable HTTPS endpoint. Override it to `AWS_IAM` in `infrastructure/agentic-endpoint.yaml` deployments when signed requests are required.

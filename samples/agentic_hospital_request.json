@@ -1,7 +1,7 @@
 {
   "task_id": "agentic-hospital-triage-001",
   "task": "Use RAG-grounded hospital, doctor, and nurse agents to create a real-time care-coordination inference for an acute ED patient.",
-  "agents": ["hospital", "doctor", "nurse"],
+  "agents": ["agent_1", "agent_2", "agent_3"],
   "rag_top_k": 4,
   "patient_context": {
     "patient_id": "P-10482",

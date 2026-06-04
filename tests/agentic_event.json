@@ -16,5 +16,6 @@
     "Patient reports worsening symptoms when walking.",
     "Family is available for medication history."
   ],
+  "agents": ["agent_1", "agent_2", "agent_3"],
   "requested_inference": "Coordinate immediate triage, clinical review, and bedside handoff priorities."
 }
