@@ -130,6 +130,11 @@ Start the pipeline:
 aws codepipeline start-pipeline-execution --name agentic-open-ai
 ```
 
+If Azure DevOps is used for pre-merge unit tests, point it at
+`azure-pipelines.yml`. That pipeline installs `requirements-ci.txt`, which pins
+CrewAI with `pydantic-settings>=2.10.1` so Azure does not resolve the known
+conflicting `pydantic-settings==2.7.1` combination.
+
 The CodeBuild smoke test invokes the deployed Lambda with a `dry_run` copy of
 `samples/agentic_hospital_request.json` and requires a `200` response before the
 pipeline artifact is considered successful. Live requests omit `dry_run` and run

@@ -1,0 +1,19 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.11"
+
+  - script: |
+      python -m pip install --upgrade pip
+      python -m pip install -r requirements-ci.txt
+      python scripts/validate_aws_agentic_pipeline.py
+      python -m pytest tests/test_agentic_endpoint.py
+    displayName: Run unit tests
