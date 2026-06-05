@@ -1,6 +1,6 @@
 ﻿# Build Agentic RAG Pipeline
 
-This repository contains AWS CI/CD pipelines for AutoGen and OpenAI-backed real-time RAG endpoints. The primary agentic CodePipeline source is configured for `kalla86840/awsautogen`, with AWS CodePipeline packaging and deploying a Lambda Function URL inference endpoint.
+This repository contains AWS CI/CD pipelines for CrewAI and OpenAI-backed real-time RAG endpoints. The primary agentic CodePipeline source is configured for `kalla86840/awscrewai`, with AWS CodePipeline packaging and deploying a Lambda Function URL inference endpoint.
 
 Start here for the AWS MCP Ops deployment path:
 
@@ -11,7 +11,7 @@ docs/aws-mcp-ops-codepipeline.md
 It now includes two deployable endpoint paths:
 
 1. `rag_endpoint/`: a multi-agent OpenAI RAG Lambda Function URL that retrieves from a plain text knowledge file and applies multiple agents before returning an answer.
-2. `agentic_endpoint/`: an agentic hospital RAG Lambda Function URL that retrieves hospital context, runs three AutoGen agents backed by OpenAI, and returns a structured care-coordination inference.
+2. `agentic_endpoint/`: an agentic hospital RAG Lambda Function URL that retrieves hospital context, runs three CrewAI agents backed by OpenAI, and returns a structured care-coordination inference.
 
 ## Recommendation Systems
 
@@ -84,12 +84,12 @@ infrastructure/open-ai-rag-endpoint.yaml
 infrastructure/open-ai-rag-endpoint-cicd.yaml
 ```
 
-## AutoGen Hospital CodePipeline
+## CrewAI Hospital CodePipeline
 
 The deployable hospital endpoint lives in `agentic_endpoint/` and is wired to
 AWS CodePipeline through `infrastructure/agentic-cicd.yaml`. The pipeline pulls
-from `kalla86840/awsautogen`, packages the Python Lambda with OpenAI and
-AutoGen dependencies, deploys `infrastructure/agentic-endpoint.yaml`, and writes
+from `kalla86840/awscrewai`, packages the Python Lambda with OpenAI and
+CrewAI dependencies, deploys `infrastructure/agentic-endpoint.yaml`, and writes
 the produced real-time HTTPS Lambda Function URL to:
 
 ```text
@@ -107,11 +107,25 @@ agent_3 -> nurse
 
 Deploy the pipeline stack:
 
-```powershell
-aws cloudformation deploy `
-  --template-file infrastructure/agentic-cicd.yaml `
-  --stack-name agentic-open-ai-cicd `
-  --capabilities CAPABILITY_NAMED_IAM
+```bash
+aws cloudformation deploy \
+  --template-file infrastructure/agentic-cicd.yaml \
+  --stack-name agentic-open-ai-cicd \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides \
+    ProjectName=agentic-open-ai \
+    ArtifactBucketName=mlopswithsagemaker111 \
+    CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
+    RepositoryId=kalla86840/awscrewai \
+    BranchName=main \
+    OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
+    OpenAIModel=gpt-5.2
+```
+
+Start the pipeline:
+
+```bash
+aws codepipeline start-pipeline-execution --name agentic-open-ai
 ```
 
 The CodeBuild smoke test invokes the deployed Lambda with

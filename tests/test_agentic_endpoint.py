@@ -12,7 +12,7 @@ def test_extract_json_object_accepts_fenced_json():
     assert payload["risk_level"] == "low"
 
 
-def test_lambda_handler_uses_autogen_orchestrator_without_live_openai(monkeypatch):
+def test_lambda_handler_uses_crewai_orchestrator_without_live_openai(monkeypatch):
     def fake_agent(agent_name, profile, payload, prior_outputs, retrieved_context, max_output_tokens, api_key):
         return {
             "summary": f"{agent_name} reviewed the event.",
@@ -31,10 +31,10 @@ def test_lambda_handler_uses_autogen_orchestrator_without_live_openai(monkeypatc
             "handoff": "Share agent findings with the care team.",
         }
 
-    monkeypatch.setattr(app, "autogen_is_available", lambda: True)
+    monkeypatch.setattr(app, "crewai_is_available", lambda: True)
     monkeypatch.setattr(app, "get_openai_api_key", lambda: "test-key")
-    monkeypatch.setattr(app, "run_autogen_agent", fake_agent)
-    monkeypatch.setattr(app, "run_autogen_final_inference", fake_final)
+    monkeypatch.setattr(app, "run_crewai_agent", fake_agent)
+    monkeypatch.setattr(app, "run_crewai_final_inference", fake_final)
 
     response = app.lambda_handler(
         {
@@ -52,7 +52,7 @@ def test_lambda_handler_uses_autogen_orchestrator_without_live_openai(monkeypatc
     body = json.loads(response["body"])
 
     assert response["statusCode"] == 200
-    assert body["orchestrator"] == "autogen"
+    assert body["orchestrator"] == "crewai"
     assert [agent["agent_id"] for agent in body["agents"]] == ["agent_1", "agent_2", "agent_3"]
     assert [agent["agent"] for agent in body["agents"]] == ["hospital", "doctor", "nurse"]
     assert body["inference"]["escalation_level"] == "urgent"

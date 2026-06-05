@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: AutoGen and OpenAI agentic hospital real-time inference Lambda endpoint.
+Description: CrewAI and OpenAI agentic hospital real-time inference Lambda endpoint.
 
 Parameters:
   ProjectName:
