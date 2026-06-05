@@ -27,8 +27,36 @@ Parameters:
   OpenAIModel:
     Type: String
     Default: gpt-5.2
+  EcrRepositoryName:
+    Type: String
+    Default: agentic-open-ai-crewai-endpoint
 
 Resources:
+  AgenticEndpointRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref EcrRepositoryName
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep the latest 10 endpoint images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
   AgenticCodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -64,14 +92,17 @@ Resources:
                 Action:
                   - cloudformation:CreateChangeSet
                   - cloudformation:CreateStack
+                  - cloudformation:DeleteChangeSet
                   - cloudformation:DescribeChangeSet
                   - cloudformation:DescribeStacks
                   - cloudformation:ExecuteChangeSet
+                  - cloudformation:GetTemplateSummary
                   - cloudformation:UpdateStack
                 Resource: "*"
               - Effect: Allow
                 Action:
                   - iam:CreateRole
+                  - iam:DeleteRole
                   - iam:DeleteRolePolicy
                   - iam:GetRole
                   - iam:PassRole
@@ -82,12 +113,28 @@ Resources:
                   - lambda:AddPermission
                   - lambda:CreateFunction
                   - lambda:CreateFunctionUrlConfig
+                  - lambda:DeleteFunction
+                  - lambda:DeleteFunctionUrlConfig
                   - lambda:GetFunction
+                  - lambda:GetFunctionConfiguration
                   - lambda:GetFunctionUrlConfig
                   - lambda:InvokeFunction
+                  - lambda:RemovePermission
                   - lambda:UpdateFunctionCode
                   - lambda:UpdateFunctionConfiguration
                   - lambda:UpdateFunctionUrlConfig
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:CompleteLayerUpload
+                  - ecr:DescribeRepositories
+                  - ecr:GetAuthorizationToken
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
                 Resource: "*"
               - Effect: Allow
                 Action:
@@ -139,8 +186,9 @@ Resources:
         Type: CODEPIPELINE
       Environment:
         Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
+        ComputeType: BUILD_GENERAL1_MEDIUM
         Image: aws/codebuild/standard:7.0
+        PrivilegedMode: true
         EnvironmentVariables:
           - Name: PROJECT_NAME
             Value: !Ref ProjectName
@@ -150,6 +198,8 @@ Resources:
             Value: !Ref OpenAIApiKeySecretArn
           - Name: OPENAI_MODEL
             Value: !Ref OpenAIModel
+          - Name: ECR_REPOSITORY_URI
+            Value: !GetAtt AgenticEndpointRepository.RepositoryUri
       Source:
         Type: CODEPIPELINE
         BuildSpec: buildspec-agentic.yml
@@ -198,4 +248,5 @@ Outputs:
     Value: !Ref AgenticPipeline
   AgenticDeployProjectName:
     Value: !Ref AgenticDeployProject
-
+  AgenticEndpointRepositoryUri:
+    Value: !GetAtt AgenticEndpointRepository.RepositoryUri

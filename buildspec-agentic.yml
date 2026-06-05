@@ -15,24 +15,33 @@ phases:
       python: 3.12
     commands:
       - python -m pip install --upgrade pip
+  pre_build:
+    commands:
+      - test -n "${ECR_REPOSITORY_URI}" || (echo "ECR_REPOSITORY_URI must be set by the CodePipeline stack" && exit 1)
+      - AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+      - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:-latest}"
+      - IMAGE_TAG="${IMAGE_TAG:0:12}"
+      - IMAGE_URI="${ECR_REPOSITORY_URI}:${IMAGE_TAG}"
+      - aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
   build:
     commands:
       - rm -rf build dist
       - mkdir -p build dist
-      - python -m pip install -r agentic_endpoint/requirements.txt -t build
-      - cp agentic_endpoint/app.py agentic_endpoint/agent_profiles.yaml agentic_endpoint/hospital_agentic_rag_knowledge.txt build/
-      - cd build && zip -r ../dist/agentic-endpoint.zip . && cd ..
-      - aws s3 cp dist/agentic-endpoint.zip "s3://${ARTIFACT_BUCKET}/${PROJECT_NAME}/lambda/agentic-endpoint.zip"
-      - aws cloudformation deploy --template-file infrastructure/agentic-endpoint.yaml --stack-name "${PROJECT_NAME}-agentic-endpoint" --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ProjectName="${PROJECT_NAME}" ArtifactBucketName="${ARTIFACT_BUCKET}" LambdaS3Key="${PROJECT_NAME}/lambda/agentic-endpoint.zip" OpenAIApiKeySecretArn="${OPENAI_API_KEY_SECRET_ARN}" OpenAIModel="${OPENAI_MODEL}"
+      - docker build -t "${IMAGE_URI}" agentic_endpoint
+      - docker push "${IMAGE_URI}"
+      - echo "${IMAGE_URI}" | tee dist/agentic-endpoint-image-uri.txt
+      - aws cloudformation deploy --template-file infrastructure/agentic-endpoint.yaml --stack-name "${PROJECT_NAME}-agentic-endpoint" --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ProjectName="${PROJECT_NAME}" ImageUri="${IMAGE_URI}" OpenAIApiKeySecretArn="${OPENAI_API_KEY_SECRET_ARN}" OpenAIModel="${OPENAI_MODEL}"
       - ENDPOINT_URL="$(aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-agentic-endpoint" --query "Stacks[0].Outputs[?OutputKey=='AgenticFunctionUrl'].OutputValue" --output text)"
       - echo "${ENDPOINT_URL}" | tee dist/agentic-endpoint-url.txt
       - printf '{"endpoint_url":"%s","agents":["agent_1:hospital","agent_2:doctor","agent_3:nurse"],"orchestrator":"crewai","model":"%s"}\n' "${ENDPOINT_URL}" "${OPENAI_MODEL}" | tee dist/agentic-endpoint-metadata.json
-      - aws lambda invoke --function-name "${PROJECT_NAME}-agentic-endpoint" --payload fileb://samples/agentic_hospital_request.json dist/agentic-sample-response.json
+      - python -c "import json; body=json.load(open('samples/agentic_hospital_request.json')); body['dry_run']=True; json.dump(body, open('dist/agentic-smoke-request.json','w'))"
+      - aws lambda invoke --function-name "${PROJECT_NAME}-crewai-endpoint" --payload fileb://dist/agentic-smoke-request.json dist/agentic-sample-response.json
       - python -c "import json; body=json.load(open('dist/agentic-sample-response.json')); assert body.get('statusCode') == 200, body; print('Agentic RAG endpoint smoke test passed')"
 
 artifacts:
   files:
-    - dist/agentic-endpoint.zip
+    - dist/agentic-endpoint-image-uri.txt
     - dist/agentic-endpoint-url.txt
     - dist/agentic-endpoint-metadata.json
+    - dist/agentic-smoke-request.json
     - dist/agentic-sample-response.json

@@ -57,3 +57,28 @@ def test_lambda_handler_uses_crewai_orchestrator_without_live_openai(monkeypatch
     assert [agent["agent"] for agent in body["agents"]] == ["hospital", "doctor", "nurse"]
     assert body["inference"]["escalation_level"] == "urgent"
     assert body["retrieved_context"]
+
+
+def test_lambda_handler_dry_run_validates_agent_mapping_without_openai():
+    response = app.lambda_handler(
+        {
+            "body": json.dumps(
+                {
+                    "dry_run": True,
+                    "agents": ["agent_1", "agent_2", "agent_3"],
+                    "patient_context": {"age": 64, "location": "emergency department"},
+                    "chief_concern": "Shortness of breath and chest pressure.",
+                    "vitals": {"heart_rate": 118, "oxygen_saturation": 89},
+                    "requested_inference": "Coordinate triage and handoff priorities.",
+                }
+            )
+        },
+        None,
+    )
+    body = json.loads(response["body"])
+
+    assert response["statusCode"] == 200
+    assert body["orchestrator"] == "crewai-dry-run"
+    assert [agent["agent_id"] for agent in body["agents"]] == ["agent_1", "agent_2", "agent_3"]
+    assert [agent["agent"] for agent in body["agents"]] == ["hospital", "doctor", "nurse"]
+    assert body["inference"]["handoff"] == "Dry-run completed without calling external OpenAI services."

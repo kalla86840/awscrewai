@@ -5,12 +5,9 @@ Parameters:
   ProjectName:
     Type: String
     Default: agentic-open-ai
-  ArtifactBucketName:
+  ImageUri:
     Type: String
-    Description: S3 bucket containing the packaged Lambda artifact.
-  LambdaS3Key:
-    Type: String
-    Description: S3 key for the packaged Lambda zip.
+    Description: ECR image URI for the packaged CrewAI Lambda container.
   OpenAIApiKeySecretArn:
     Type: String
     Description: Secrets Manager ARN containing the OpenAI API key.
@@ -56,15 +53,13 @@ Resources:
   AgenticFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${ProjectName}-agentic-endpoint
+      FunctionName: !Sub ${ProjectName}-crewai-endpoint
       Role: !GetAtt AgenticFunctionRole.Arn
-      Runtime: python3.12
-      Handler: app.lambda_handler
+      PackageType: Image
       Timeout: 90
-      MemorySize: 512
+      MemorySize: 2048
       Code:
-        S3Bucket: !Ref ArtifactBucketName
-        S3Key: !Ref LambdaS3Key
+        ImageUri: !Ref ImageUri
       Environment:
         Variables:
           OPENAI_API_KEY_SECRET_ARN: !Ref OpenAIApiKeySecretArn

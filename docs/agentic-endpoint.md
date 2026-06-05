@@ -8,6 +8,7 @@ This endpoint creates a real-time agentic RAG inference workflow for hospital co
 - `agentic_endpoint/agent_profiles.yaml`: Hospital, doctor, and nurse agent prompts.
 - `agentic_endpoint/hospital_agentic_rag_knowledge.txt`: RAG text file bundled with the endpoint.
 - `agentic_endpoint/requirements.txt`: Lambda package dependencies.
+- `agentic_endpoint/Dockerfile`: Lambda container image definition for CrewAI dependencies.
 - `infrastructure/agentic-endpoint.yaml`: Lambda Function URL CloudFormation template.
 - `infrastructure/agentic-cicd.yaml`: CodePipeline/CodeBuild template for the endpoint.
 - `buildspec-agentic.yml`: Packages and deploys the Lambda endpoint.
@@ -67,6 +68,8 @@ aws cloudformation deploy \
     OpenAIModel=gpt-5.2
 ```
 
-The pipeline is named `agentic-open-ai`. It creates a CodeBuild project named `agentic-open-ai-agentic-deploy`. CodeBuild packages the Lambda artifact, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
+The pipeline is named `agentic-open-ai`. It creates a CodeBuild project named `agentic-open-ai-agentic-deploy` and an ECR repository for the endpoint image. CodeBuild builds the CrewAI Lambda container image, pushes it to ECR, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
+
+The pipeline smoke test uses `dry_run: true` to validate the deployed AWS endpoint without calling OpenAI during deployment. Remove `dry_run` from inference requests to run the live CrewAI/OpenAI workflow.
 
 By default, the Lambda Function URL uses `FunctionUrlAuthType=NONE` so the pipeline produces a directly callable HTTPS endpoint. Override it to `AWS_IAM` in `infrastructure/agentic-endpoint.yaml` deployments when signed requests are required.

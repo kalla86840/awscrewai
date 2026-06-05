@@ -52,9 +52,9 @@ Useful options:
 ```text
 GitHub repository
   -> AWS CodePipeline
-  -> AWS CodeBuild packages endpoint code, dependencies, and RAG text files
-  -> CodeBuild uploads Lambda artifacts to S3
-  -> CloudFormation deploys Lambda Function URL endpoints
+  -> AWS CodeBuild builds endpoint code, dependencies, and RAG text files into a Lambda container image
+  -> CodeBuild pushes the CrewAI endpoint image to Amazon ECR
+  -> CloudFormation deploys Lambda Function URL endpoints from the ECR image
   -> Lambda embeds the query with OpenAI and retrieves relevant RAG context from Pinecone
   -> Lambda calls OpenAI
   -> Endpoint returns ranked recommendations or grounded real-time inference
@@ -89,12 +89,14 @@ infrastructure/open-ai-rag-endpoint-cicd.yaml
 The deployable hospital endpoint lives in `agentic_endpoint/` and is wired to
 AWS CodePipeline through `infrastructure/agentic-cicd.yaml`. The pipeline pulls
 from `kalla86840/awscrewai`, packages the Python Lambda with OpenAI and
-CrewAI dependencies, deploys `infrastructure/agentic-endpoint.yaml`, and writes
+CrewAI dependencies into an Amazon ECR Lambda container image, deploys
+`infrastructure/agentic-endpoint.yaml`, and writes
 the produced real-time HTTPS Lambda Function URL to:
 
 ```text
 dist/agentic-endpoint-url.txt
 dist/agentic-endpoint-metadata.json
+dist/agentic-endpoint-image-uri.txt
 ```
 
 Agent mapping:
@@ -128,9 +130,10 @@ Start the pipeline:
 aws codepipeline start-pipeline-execution --name agentic-open-ai
 ```
 
-The CodeBuild smoke test invokes the deployed Lambda with
+The CodeBuild smoke test invokes the deployed Lambda with a `dry_run` copy of
 `samples/agentic_hospital_request.json` and requires a `200` response before the
-pipeline artifact is considered successful.
+pipeline artifact is considered successful. Live requests omit `dry_run` and run
+the CrewAI/OpenAI agent flow.
 
 Sample files:
 
