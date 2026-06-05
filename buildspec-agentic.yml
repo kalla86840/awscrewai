@@ -17,6 +17,7 @@ phases:
       - python -m pip install --upgrade pip
   pre_build:
     commands:
+      - python scripts/validate_aws_agentic_pipeline.py
       - test -n "${ECR_REPOSITORY_URI}" || (echo "ECR_REPOSITORY_URI must be set by the CodePipeline stack" && exit 1)
       - AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
       - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:-latest}"
@@ -33,7 +34,7 @@ phases:
       - aws cloudformation deploy --template-file infrastructure/agentic-endpoint.yaml --stack-name "${PROJECT_NAME}-agentic-endpoint" --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ProjectName="${PROJECT_NAME}" ImageUri="${IMAGE_URI}" OpenAIApiKeySecretArn="${OPENAI_API_KEY_SECRET_ARN}" OpenAIModel="${OPENAI_MODEL}"
       - ENDPOINT_URL="$(aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-agentic-endpoint" --query "Stacks[0].Outputs[?OutputKey=='AgenticFunctionUrl'].OutputValue" --output text)"
       - echo "${ENDPOINT_URL}" | tee dist/agentic-endpoint-url.txt
-      - printf '{"endpoint_url":"%s","agents":["agent_1:hospital","agent_2:doctor","agent_3:nurse"],"orchestrator":"crewai","model":"%s"}\n' "${ENDPOINT_URL}" "${OPENAI_MODEL}" | tee dist/agentic-endpoint-metadata.json
+      - printf '{"endpoint_url":"%s","agents":["agent_1:hospital","agent_2:doctor","agent_3:nurse"],"orchestrator":"crewai","model":"%s","aws_service":"lambda-function-url"}\n' "${ENDPOINT_URL}" "${OPENAI_MODEL}" | tee dist/agentic-endpoint-metadata.json
       - python -c "import json; body=json.load(open('samples/agentic_hospital_request.json')); body['dry_run']=True; json.dump(body, open('dist/agentic-smoke-request.json','w'))"
       - aws lambda invoke --function-name "${PROJECT_NAME}-crewai-endpoint" --payload fileb://dist/agentic-smoke-request.json dist/agentic-sample-response.json
       - python -c "import json; body=json.load(open('dist/agentic-sample-response.json')); assert body.get('statusCode') == 200, body; print('Agentic RAG endpoint smoke test passed')"

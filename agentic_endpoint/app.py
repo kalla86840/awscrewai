@@ -1,7 +1,6 @@
 import json
 import os
 import re
-import asyncio
 from collections import Counter
 from pathlib import Path
 
@@ -10,10 +9,9 @@ import yaml
 from openai import OpenAI
 
 try:
-    from autogen_agentchat.agents import AssistantAgent
-    from autogen_ext.models.openai import OpenAIChatCompletionClient
+    from crewai import Agent, Crew, LLM, Process, Task
 except ImportError:  # Allows fast local contract tests without the full Lambda dependency set.
-    AssistantAgent = OpenAIChatCompletionClient = None
+    Agent = Crew = LLM = Process = Task = None
 
 
 PROFILE_PATH = Path(__file__).with_name("agent_profiles.yaml")
@@ -201,84 +199,78 @@ def _extract_json_object(text):
         return json.loads(match.group(0))
 
 
-def _agentchat_output_text(output):
-    messages = getattr(output, "messages", None)
-    if messages:
-        for message in reversed(messages):
-            content = getattr(message, "content", None)
-            if content:
-                return content
+def _crew_output_text(output):
+    if hasattr(output, "raw"):
+        return output.raw
     return str(output)
 
 
-def autogen_is_available():
-    return all(component is not None for component in (AssistantAgent, OpenAIChatCompletionClient))
+def crewai_is_available():
+    return all(component is not None for component in (Agent, Crew, LLM, Process, Task))
 
 
-def build_model_client(model, api_key):
-    if not autogen_is_available():
+def build_llm(model, api_key):
+    if not crewai_is_available():
         return None
-    return OpenAIChatCompletionClient(model=model, api_key=api_key)
+    return LLM(model=f"openai/{model}", api_key=api_key)
 
 
-async def _run_autogen_agent_async(agent_name, profile, payload, prior_outputs, retrieved_context, max_output_tokens, api_key):
+def run_crewai_agent(agent_name, profile, payload, prior_outputs, retrieved_context, max_output_tokens, api_key):
     model = payload.get("model") or profile.get("model") or os.getenv("OPENAI_MODEL", "gpt-5.2")
-    model_client = build_model_client(model, api_key)
-    agent = AssistantAgent(
-        name=f"{agent_name}_agent",
-        model_client=model_client,
-        system_message=(
-            f"{profile['instructions']}\n\n"
-            "Return strict JSON only. Do not include markdown fences or extra commentary."
-        ),
+    llm = build_llm(model, api_key)
+    agent = Agent(
+        role=f"{agent_name.title()} real-time inference agent",
+        goal="Produce a grounded JSON care-coordination assessment for the endpoint.",
+        backstory=profile["instructions"],
+        llm=llm,
+        allow_delegation=False,
+        verbose=False,
     )
-    output = await agent.run(
-        task=(
+    task = Task(
+        description=(
             "Analyze this real-time endpoint payload and return only a JSON object matching this schema: "
             f"{json.dumps(AGENT_OUTPUT_SCHEMA)}\n\n"
             f"Input:\n{build_agent_input(payload, prior_outputs, retrieved_context)}\n\n"
             f"Keep the response under {max_output_tokens} output tokens."
-        )
-    )
-    await model_client.close()
-    return _extract_json_object(_agentchat_output_text(output))
-
-
-def run_autogen_agent(agent_name, profile, payload, prior_outputs, retrieved_context, max_output_tokens, api_key):
-    return asyncio.run(
-        _run_autogen_agent_async(agent_name, profile, payload, prior_outputs, retrieved_context, max_output_tokens, api_key)
-    )
-
-
-async def _run_autogen_final_inference_async(payload, agent_outputs, retrieved_context, max_output_tokens, api_key):
-    model = payload.get("model") or os.getenv("OPENAI_MODEL", "gpt-5.2")
-    model_client = build_model_client(model, api_key)
-    coordinator = AssistantAgent(
-        name="care_coordination_synthesis_agent",
-        model_client=model_client,
-        system_message=(
-            "You coordinate OpenAI and AutoGen agent outputs for a hospital operations endpoint. "
-            "You ground the response in retrieved context, avoid diagnosis, and return strict JSON only."
         ),
+        expected_output="A strict JSON object with summary, findings, next_actions, and risk_level.",
+        agent=agent,
     )
-    output = await coordinator.run(
-        task=(
+    output = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False).kickoff()
+    return _extract_json_object(_crew_output_text(output))
+
+
+def run_crewai_final_inference(payload, agent_outputs, retrieved_context, max_output_tokens, api_key):
+    model = payload.get("model") or os.getenv("OPENAI_MODEL", "gpt-5.2")
+    llm = build_llm(model, api_key)
+    coordinator = Agent(
+        role="Care coordination synthesis agent",
+        goal="Synthesize specialist agent findings into a single real-time endpoint inference.",
+        backstory=(
+            "You coordinate OpenAI and CrewAI agent outputs for a hospital operations endpoint. "
+            "You ground the response in retrieved context, avoid diagnosis, and return JSON only."
+        ),
+        llm=llm,
+        allow_delegation=False,
+        verbose=False,
+    )
+    task = Task(
+        description=(
             "Return only a JSON object matching this inference schema: "
             f"{json.dumps(payload.get('response_schema') or INFERENCE_SCHEMA)}\n\n"
             f"Payload:\n{json.dumps(payload, indent=2)}\n\n"
             f"Retrieved context:\n{json.dumps(retrieved_context, indent=2)}\n\n"
             f"Agent outputs:\n{json.dumps(agent_outputs, indent=2)}\n\n"
             f"Keep the response under {max_output_tokens} output tokens."
-        )
+        ),
+        expected_output=(
+            "A strict JSON object with case_summary, care_team_consensus, recommended_actions, "
+            "signals_to_monitor, escalation_level, and handoff."
+        ),
+        agent=coordinator,
     )
-    await model_client.close()
-    return _extract_json_object(_agentchat_output_text(output))
-
-
-def run_autogen_final_inference(payload, agent_outputs, retrieved_context, max_output_tokens, api_key):
-    return asyncio.run(
-        _run_autogen_final_inference_async(payload, agent_outputs, retrieved_context, max_output_tokens, api_key)
-    )
+    output = Crew(agents=[coordinator], tasks=[task], process=Process.sequential, verbose=False).kickoff()
+    return _extract_json_object(_crew_output_text(output))
 
 
 def call_agent(client, agent_name, profile, payload, prior_outputs, retrieved_context, max_output_tokens):
