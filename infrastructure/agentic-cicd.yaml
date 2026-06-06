@@ -258,7 +258,7 @@ Resources:
       Source:
         Type: CODEPIPELINE
         BuildSpec: buildspec-agentic.yml
-      TimeoutInMinutes: 30
+      TimeoutInMinutes: 90
 
   AgenticPipeline:
     Type: AWS::CodePipeline::Pipeline

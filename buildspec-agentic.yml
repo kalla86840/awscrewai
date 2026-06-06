@@ -46,7 +46,18 @@ phases:
           ROLLBACK_COMPLETE|ROLLBACK_FAILED|CREATE_FAILED|DELETE_FAILED|UPDATE_ROLLBACK_FAILED)
             echo "Deleting stuck endpoint stack ${ENDPOINT_STACK} with status ${STACK_STATUS}"
             aws cloudformation delete-stack --stack-name "${ENDPOINT_STACK}"
-            aws cloudformation wait stack-delete-complete --stack-name "${ENDPOINT_STACK}"
+            for attempt in $(seq 1 30); do
+              STACK_STATUS="$(aws cloudformation describe-stacks --stack-name "${ENDPOINT_STACK}" --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo DELETE_COMPLETE)"
+              if [ "${STACK_STATUS}" = "DELETE_COMPLETE" ]; then
+                break
+              fi
+              echo "Waiting for ${ENDPOINT_STACK} deletion, status ${STACK_STATUS}, attempt ${attempt}/30"
+              sleep 30
+            done
+            if [ "${STACK_STATUS}" != "DELETE_COMPLETE" ]; then
+              aws cloudformation describe-stack-events --stack-name "${ENDPOINT_STACK}" --max-items 20 --query "StackEvents[].[Timestamp,LogicalResourceId,ResourceStatus,ResourceStatusReason]" --output table
+              exit 1
+            fi
             ;;
         esac
       - aws cloudformation deploy --template-file infrastructure/agentic-endpoint.yaml --stack-name "${PROJECT_NAME}-agentic-endpoint" --capabilities CAPABILITY_NAMED_IAM --no-fail-on-empty-changeset --parameter-overrides ProjectName="${PROJECT_NAME}" ImageUri="${IMAGE_URI}" OpenAIApiKeySecretArn="${OPENAI_API_KEY_SECRET_ARN}" OpenAIModel="${OPENAI_MODEL}" PineconeApiKeySecretArn="${PINECONE_API_KEY_SECRET_ARN}" PineconeIndexName="${PINECONE_INDEX_NAME}" PineconeNamespace="${PINECONE_NAMESPACE}" PineconeDimension="${PINECONE_DIMENSION}" PineconeCloud="${PINECONE_CLOUD}" PineconeRegion="${PINECONE_REGION}" PineconeUpsertOnQuery="${PINECONE_UPSERT_ON_QUERY}" || (aws cloudformation describe-stack-events --stack-name "${PROJECT_NAME}-agentic-endpoint" --max-items 20 --query "StackEvents[].[Timestamp,LogicalResourceId,ResourceStatus,ResourceStatusReason]" --output table; exit 1)
