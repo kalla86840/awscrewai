@@ -122,8 +122,8 @@ aws cloudformation deploy \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2 \
-    PineconeApiKeySecretArn="" \
-    PineconeIndexName=agentic-hospital-rag-1024 \
+    PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
+    PineconeIndexName=news-demo \
     PineconeIndexHost="" \
     PineconeNamespace=hospital-agentic \
     PineconeDimension=1024 \
@@ -132,10 +132,9 @@ aws cloudformation deploy \
     PineconeUpsertOnQuery=true
 ```
 
-Leave `PineconeApiKeySecretArn` empty to use the packaged keyword fallback.
-Pass your Pinecone Secrets Manager ARN to enable vector retrieval. The endpoint
-will create or reuse `PineconeIndexName` when `PineconeIndexHost` is empty, and
-uses 1024-dimensional OpenAI embeddings by default.
+The default Pinecone settings reuse your existing `news-demo` index in AWS
+`us-east-1` with 1024-dimensional OpenAI embeddings. Leave
+`PineconeApiKeySecretArn` empty only when you want the packaged keyword fallback.
 
 Start the pipeline:
 

@@ -29,11 +29,11 @@ Parameters:
     Default: gpt-5.2
   PineconeApiKeySecretArn:
     Type: String
-    Default: ""
+    Default: arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra
     Description: Optional Secrets Manager ARN containing the Pinecone API key.
   PineconeIndexName:
     Type: String
-    Default: agentic-hospital-rag-1024
+    Default: news-demo
   PineconeIndexHost:
     Type: String
     Default: ""

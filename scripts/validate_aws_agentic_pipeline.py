@@ -33,6 +33,7 @@ def main():
     require("PineconeApiKeySecretArn" in cicd_template, "CodePipeline stack must expose a Pinecone secret parameter.")
     require("PINECONE_API_KEY_SECRET_ARN" in buildspec, "CodeBuild must pass Pinecone settings to endpoint deploys.")
     require("PINECONE_INDEX_NAME" in endpoint_template, "Endpoint Lambda must receive Pinecone index settings.")
+    require("news-demo" in buildspec and "news-demo" in cicd_template and "news-demo" in endpoint_template, "AWS pipeline must default to the existing Pinecone news-demo index.")
     require("HasPineconeSecret" in endpoint_template, "Endpoint stack must allow Pinecone to remain optional.")
 
     print("AWS CrewAI CodePipeline validation passed.")

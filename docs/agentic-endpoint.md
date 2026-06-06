@@ -51,9 +51,9 @@ The endpoint retrieves relevant RAG sections and passes them to every agent. It 
 
 Pinecone retrieval is controlled by these deployment parameters and Lambda environment variables:
 
-- `PineconeApiKeySecretArn`: optional Secrets Manager ARN for the Pinecone API key. Leave it empty to use keyword retrieval only.
-- `PineconeIndexName`: default `agentic-hospital-rag-1024`.
-- `PineconeIndexHost`: optional existing Pinecone host. Leave empty to create or reuse `PineconeIndexName`.
+- `PineconeApiKeySecretArn`: Secrets Manager ARN for the Pinecone API key. Leave it empty to use keyword retrieval only.
+- `PineconeIndexName`: default `news-demo`.
+- `PineconeIndexHost`: optional existing Pinecone host. Leave empty to use `PineconeIndexName`.
 - `PineconeNamespace`: default `hospital-agentic`.
 - `PineconeDimension`: default `1024`, matching `text-embedding-3-small` with a 1024-dimensional embedding request.
 - `PineconeUpsertOnQuery`: default `true`, so the bundled hospital knowledge is seeded before querying.
@@ -77,8 +77,8 @@ aws cloudformation deploy \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2 \
-    PineconeApiKeySecretArn="" \
-    PineconeIndexName=agentic-hospital-rag-1024 \
+    PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
+    PineconeIndexName=news-demo \
     PineconeIndexHost="" \
     PineconeNamespace=hospital-agentic \
     PineconeDimension=1024 \
@@ -87,7 +87,7 @@ aws cloudformation deploy \
     PineconeUpsertOnQuery=true
 ```
 
-Set `PineconeApiKeySecretArn` to your Pinecone Secrets Manager ARN when you want Pinecone-backed retrieval. The pipeline is named `aws-autogen-open-ai-pincone`. It creates a CodeBuild project named `aws-autogen-open-ai-pincone-agentic-deploy` and an ECR repository for the endpoint image. CodeBuild builds the CrewAI Lambda container image, pushes it to ECR, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
+The default Pinecone settings reuse your existing `news-demo` index in AWS `us-east-1`. The pipeline is named `aws-autogen-open-ai-pincone`. It creates a CodeBuild project named `aws-autogen-open-ai-pincone-agentic-deploy` and an ECR repository for the endpoint image. CodeBuild builds the CrewAI Lambda container image, pushes it to ECR, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
 
 The pipeline smoke test uses `dry_run: true` to validate the deployed AWS endpoint without calling OpenAI during deployment. Remove `dry_run` from inference requests to run the live CrewAI/OpenAI workflow.
 
