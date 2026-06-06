@@ -88,8 +88,8 @@ infrastructure/open-ai-rag-endpoint-cicd.yaml
 
 The deployable hospital endpoint lives in `agentic_endpoint/` and is wired to
 AWS CodePipeline through `infrastructure/agentic-cicd.yaml`. The pipeline pulls
-from `kalla86840/awscrewai`, packages the Python Lambda with OpenAI and
-CrewAI dependencies into an Amazon ECR Lambda container image, deploys
+from `kalla86840/awscrewai`, packages the Python Lambda with OpenAI, CrewAI,
+and Pinecone dependencies into an Amazon ECR Lambda container image, deploys
 `infrastructure/agentic-endpoint.yaml`, and writes
 the produced real-time HTTPS Lambda Function URL to:
 
@@ -121,8 +121,21 @@ aws cloudformation deploy \
     RepositoryId=kalla86840/awscrewai \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
-    OpenAIModel=gpt-5.2
+    OpenAIModel=gpt-5.2 \
+    PineconeApiKeySecretArn="" \
+    PineconeIndexName=agentic-hospital-rag-1024 \
+    PineconeIndexHost="" \
+    PineconeNamespace=hospital-agentic \
+    PineconeDimension=1024 \
+    PineconeCloud=aws \
+    PineconeRegion=us-east-1 \
+    PineconeUpsertOnQuery=true
 ```
+
+Leave `PineconeApiKeySecretArn` empty to use the packaged keyword fallback.
+Pass your Pinecone Secrets Manager ARN to enable vector retrieval. The endpoint
+will create or reuse `PineconeIndexName` when `PineconeIndexHost` is empty, and
+uses 1024-dimensional OpenAI embeddings by default.
 
 Start the pipeline:
 

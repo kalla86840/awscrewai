@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -182,8 +183,19 @@ def get_pinecone_index(api_key):
         return pc.Index(host=index_host)
 
     index_name = os.getenv("PINECONE_INDEX_NAME", DEFAULT_PINECONE_INDEX_NAME)
-    existing_names = [index["name"] for index in pc.list_indexes()]
-    if index_name not in existing_names:
+    has_index = False
+    if hasattr(pc, "has_index"):
+        has_index = pc.has_index(index_name)
+    else:
+        existing_names = []
+        for index in pc.list_indexes():
+            if isinstance(index, dict):
+                existing_names.append(index.get("name"))
+            else:
+                existing_names.append(getattr(index, "name", None))
+        has_index = index_name in existing_names
+
+    if not has_index:
         pc.create_index(
             name=index_name,
             dimension=int(os.getenv("PINECONE_DIMENSION", "1024")),
@@ -193,6 +205,13 @@ def get_pinecone_index(api_key):
                 region=os.getenv("PINECONE_REGION", "us-east-1"),
             ),
         )
+        for _ in range(30):
+            description = pc.describe_index(index_name)
+            status = description.get("status", {}) if isinstance(description, dict) else getattr(description, "status", {})
+            ready = status.get("ready") if isinstance(status, dict) else getattr(status, "ready", False)
+            if ready:
+                break
+            time.sleep(2)
     return pc.Index(index_name)
 
 
@@ -230,15 +249,23 @@ def pinecone_retrieve_context(payload, documents, query, top_k, openai_api_key):
     )
 
     contexts = []
-    for match in result.get("matches", []):
-        metadata = match.get("metadata") or {}
+    matches = result.get("matches", []) if isinstance(result, dict) else getattr(result, "matches", [])
+    for match in matches:
+        if isinstance(match, dict):
+            match_id = match.get("id")
+            score = match.get("score")
+            metadata = match.get("metadata") or {}
+        else:
+            match_id = getattr(match, "id", None)
+            score = getattr(match, "score", None)
+            metadata = getattr(match, "metadata", {}) or {}
         contexts.append(
             {
-                "id": match.get("id"),
-                "title": metadata.get("title", match.get("id", "Pinecone match")),
+                "id": match_id,
+                "title": metadata.get("title", match_id or "Pinecone match"),
                 "source": metadata.get("source", "pinecone"),
                 "content": metadata.get("content", ""),
-                "score": match.get("score"),
+                "score": score,
                 "retrieval_source": "pinecone",
                 "namespace": namespace,
             }

@@ -59,6 +59,9 @@ Parameters:
     Type: String
     Default: aws-autogen-open-ai-pincone-crewai-endpoint
 
+Conditions:
+  HasPineconeSecret: !Not [!Equals [!Ref PineconeApiKeySecretArn, ""]]
+
 Resources:
   AgenticEndpointRepository:
     Type: AWS::ECR::Repository
@@ -168,10 +171,13 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: !Ref OpenAIApiKeySecretArn
-              - Effect: Allow
-                Action:
-                  - secretsmanager:GetSecretValue
-                Resource: !Ref PineconeApiKeySecretArn
+              - !If
+                - HasPineconeSecret
+                - Effect: Allow
+                  Action:
+                    - secretsmanager:GetSecretValue
+                  Resource: !Ref PineconeApiKeySecretArn
+                - !Ref AWS::NoValue
 
   AgenticCodePipelineRole:
     Type: AWS::IAM::Role

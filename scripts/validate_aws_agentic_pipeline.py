@@ -28,7 +28,12 @@ def main():
     require("--function-name \"${PROJECT_NAME}-crewai-endpoint\"" in buildspec, "CodeBuild must invoke the deployed CrewAI Lambda.")
     require('"orchestrator":"crewai"' in buildspec, "Endpoint metadata must identify the CrewAI orchestrator.")
     require("crewai" in requirements.lower(), "Endpoint container must install CrewAI.")
+    require("pinecone" in requirements.lower(), "Endpoint container must install Pinecone for vector retrieval.")
     require("autogen" not in requirements.lower(), "Endpoint container requirements must not install AutoGen.")
+    require("PineconeApiKeySecretArn" in cicd_template, "CodePipeline stack must expose a Pinecone secret parameter.")
+    require("PINECONE_API_KEY_SECRET_ARN" in buildspec, "CodeBuild must pass Pinecone settings to endpoint deploys.")
+    require("PINECONE_INDEX_NAME" in endpoint_template, "Endpoint Lambda must receive Pinecone index settings.")
+    require("HasPineconeSecret" in endpoint_template, "Endpoint stack must allow Pinecone to remain optional.")
 
     print("AWS CrewAI CodePipeline validation passed.")
 

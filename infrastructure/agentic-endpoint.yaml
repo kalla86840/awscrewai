@@ -51,6 +51,9 @@ Parameters:
       - AWS_IAM
     Description: Use NONE for a directly callable real-time HTTPS endpoint, or AWS_IAM for signed requests.
 
+Conditions:
+  HasPineconeSecret: !Not [!Equals [!Ref PineconeApiKeySecretArn, ""]]
+
 Resources:
   AgenticFunctionRole:
     Type: AWS::IAM::Role
@@ -78,10 +81,13 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: !Ref OpenAIApiKeySecretArn
-              - Effect: Allow
-                Action:
-                  - secretsmanager:GetSecretValue
-                Resource: !Ref PineconeApiKeySecretArn
+              - !If
+                - HasPineconeSecret
+                - Effect: Allow
+                  Action:
+                    - secretsmanager:GetSecretValue
+                  Resource: !Ref PineconeApiKeySecretArn
+                - !Ref AWS::NoValue
 
   AgenticFunction:
     Type: AWS::Lambda::Function

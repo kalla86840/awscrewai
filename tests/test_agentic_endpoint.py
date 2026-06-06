@@ -82,3 +82,38 @@ def test_lambda_handler_dry_run_validates_agent_mapping_without_openai():
     assert [agent["agent_id"] for agent in body["agents"]] == ["agent_1", "agent_2", "agent_3"]
     assert [agent["agent"] for agent in body["agents"]] == ["hospital", "doctor", "nurse"]
     assert body["inference"]["handoff"] == "Dry-run completed without calling external OpenAI services."
+
+
+def test_retrieve_context_uses_keyword_when_pinecone_is_disabled():
+    payload = {
+        "disable_pinecone": True,
+        "chief_concern": "Shortness of breath and low oxygen saturation.",
+        "vitals": {"oxygen_saturation": 89},
+        "requested_inference": "Coordinate urgent hospital handoff.",
+    }
+
+    contexts = app.retrieve_context(payload, openai_api_key="test-key")
+
+    assert contexts
+    assert all(context["retrieval_source"] == "keyword" for context in contexts)
+
+
+def test_retrieve_context_falls_back_when_pinecone_errors(monkeypatch):
+    payload = {
+        "chief_concern": "Shortness of breath and low oxygen saturation.",
+        "vitals": {"oxygen_saturation": 89},
+        "requested_inference": "Coordinate urgent hospital handoff.",
+    }
+
+    monkeypatch.setattr(app, "pinecone_is_available", lambda payload: True)
+
+    def fail_pinecone(*args, **kwargs):
+        raise RuntimeError("pinecone unavailable")
+
+    monkeypatch.setattr(app, "pinecone_retrieve_context", fail_pinecone)
+
+    contexts = app.retrieve_context(payload, openai_api_key="test-key")
+
+    assert contexts
+    assert all(context["retrieval_source"] == "keyword" for context in contexts)
+    assert all(context["pinecone_error"] == "pinecone unavailable" for context in contexts)
