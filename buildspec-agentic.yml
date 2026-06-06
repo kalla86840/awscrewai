@@ -39,7 +39,31 @@ phases:
       - docker build -t "${IMAGE_URI}" agentic_endpoint
       - docker push "${IMAGE_URI}"
       - echo "${IMAGE_URI}" | tee dist/agentic-endpoint-image-uri.txt
-      - aws cloudformation deploy --template-file infrastructure/agentic-endpoint.yaml --stack-name "${PROJECT_NAME}-agentic-endpoint" --capabilities CAPABILITY_NAMED_IAM --no-fail-on-empty-changeset --parameter-overrides ProjectName="${PROJECT_NAME}" ImageUri="${IMAGE_URI}" OpenAIApiKeySecretArn="${OPENAI_API_KEY_SECRET_ARN}" OpenAIModel="${OPENAI_MODEL}" PineconeApiKeySecretArn="${PINECONE_API_KEY_SECRET_ARN}" PineconeIndexName="${PINECONE_INDEX_NAME}" PineconeIndexHost="${PINECONE_INDEX_HOST}" PineconeNamespace="${PINECONE_NAMESPACE}" PineconeDimension="${PINECONE_DIMENSION}" PineconeCloud="${PINECONE_CLOUD}" PineconeRegion="${PINECONE_REGION}" PineconeUpsertOnQuery="${PINECONE_UPSERT_ON_QUERY}"
+      - |
+        set -- \
+          ProjectName="${PROJECT_NAME}" \
+          ImageUri="${IMAGE_URI}" \
+          OpenAIApiKeySecretArn="${OPENAI_API_KEY_SECRET_ARN}" \
+          OpenAIModel="${OPENAI_MODEL}"
+        if [ -n "${PINECONE_API_KEY_SECRET_ARN}" ]; then
+          set -- "$@" \
+            PineconeApiKeySecretArn="${PINECONE_API_KEY_SECRET_ARN}" \
+            PineconeIndexName="${PINECONE_INDEX_NAME}" \
+            PineconeNamespace="${PINECONE_NAMESPACE}" \
+            PineconeDimension="${PINECONE_DIMENSION}" \
+            PineconeCloud="${PINECONE_CLOUD}" \
+            PineconeRegion="${PINECONE_REGION}" \
+            PineconeUpsertOnQuery="${PINECONE_UPSERT_ON_QUERY}"
+          if [ -n "${PINECONE_INDEX_HOST}" ]; then
+            set -- "$@" PineconeIndexHost="${PINECONE_INDEX_HOST}"
+          fi
+        fi
+        aws cloudformation deploy \
+          --template-file infrastructure/agentic-endpoint.yaml \
+          --stack-name "${PROJECT_NAME}-agentic-endpoint" \
+          --capabilities CAPABILITY_NAMED_IAM \
+          --no-fail-on-empty-changeset \
+          --parameter-overrides "$@"
       - ENDPOINT_URL="$(aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-agentic-endpoint" --query "Stacks[0].Outputs[?OutputKey=='AgenticFunctionUrl'].OutputValue" --output text)"
       - echo "${ENDPOINT_URL}" | tee dist/agentic-endpoint-url.txt
       - printf '{"endpoint_url":"%s","agents":["agent_1:hospital","agent_2:doctor","agent_3:nurse"],"orchestrator":"crewai","model":"%s","aws_service":"lambda-function-url"}\n' "${ENDPOINT_URL}" "${OPENAI_MODEL}" | tee dist/agentic-endpoint-metadata.json
