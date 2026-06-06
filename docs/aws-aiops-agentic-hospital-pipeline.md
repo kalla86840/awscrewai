@@ -19,12 +19,12 @@ The endpoint first retrieves relevant sections from `agentic_endpoint/hospital_a
 ```text
 GitHub source repository
   -> AWS CodePipeline source stage
-  -> AWS CodeBuild project agentic-open-ai-agentic-deploy
+  -> AWS CodeBuild project aws-autogen-open-ai-pincone-agentic-deploy
   -> Package agentic_endpoint/app.py, agent_profiles.yaml, RAG text file, and dependencies
   -> Upload dist/agentic-endpoint.zip to S3
   -> CloudFormation deploy infrastructure/agentic-endpoint.yaml
   -> Lambda Function URL real-time endpoint
-  -> Invoke agentic-open-ai-agentic-endpoint with samples/agentic_hospital_request.json
+  -> Invoke aws-autogen-open-ai-pincone-agentic-endpoint with samples/agentic_hospital_request.json
   -> POST hospital event JSON for OpenAI-backed agentic RAG inference
 ```
 
@@ -83,10 +83,10 @@ samples/agentic_hospital_sample_inference.json
 ```bash
 aws cloudformation deploy \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name agentic-open-ai-cicd \
+  --stack-name aws-autogen-open-ai-pincone-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=agentic-open-ai \
+    ProjectName=aws-autogen-open-ai-pincone \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
     RepositoryId=kalla86840/awspineconeragforchatbotsandassistants \
@@ -113,7 +113,7 @@ For direct Lambda testing inside AWS, invoke the function by name:
 
 ```bash
 aws lambda invoke \
-  --function-name agentic-open-ai-agentic-endpoint \
+  --function-name aws-autogen-open-ai-pincone-agentic-endpoint \
   --payload fileb://samples/agentic_hospital_request.json \
   response.json
 ```

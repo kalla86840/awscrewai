@@ -112,10 +112,10 @@ Deploy the pipeline stack:
 ```bash
 aws cloudformation deploy \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name agentic-open-ai-cicd \
+  --stack-name aws-autogen-open-ai-pincone-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=agentic-open-ai \
+    ProjectName=aws-autogen-open-ai-pincone \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
     RepositoryId=kalla86840/awscrewai \
@@ -127,7 +127,7 @@ aws cloudformation deploy \
 Start the pipeline:
 
 ```bash
-aws codepipeline start-pipeline-execution --name agentic-open-ai
+aws codepipeline start-pipeline-execution --name aws-autogen-open-ai-pincone
 ```
 
 If Azure DevOps is used for pre-merge unit tests, point it at
@@ -328,7 +328,7 @@ samples/agentic_hospital_request.json
 samples/agentic_hospital_sample_inference.json
 ```
 
-After deployment, get the URL from the `agentic-open-ai-agentic-endpoint` CloudFormation stack output named `AgenticFunctionUrl`.
+After deployment, get the URL from the `aws-autogen-open-ai-pincone-agentic-endpoint` CloudFormation stack output named `AgenticFunctionUrl`.
 
 ## AWS And OpenAI Configuration
 
@@ -482,10 +482,10 @@ curl -X POST "$ENDPOINT_URL" \
 aws cloudformation deploy \
   --region us-west-1 \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name agentic-open-ai-cicd \
+  --stack-name aws-autogen-open-ai-pincone-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=agentic-open-ai \
+    ProjectName=aws-autogen-open-ai-pincone \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
     RepositoryId=kalla86840/awsmcpops \

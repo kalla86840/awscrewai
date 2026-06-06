@@ -56,10 +56,10 @@ Create the CI/CD pipeline:
 ```bash
 aws cloudformation deploy \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name agentic-open-ai-cicd \
+  --stack-name aws-autogen-open-ai-pincone-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=agentic-open-ai \
+    ProjectName=aws-autogen-open-ai-pincone \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
     RepositoryId=kalla86840/awscrewai \
@@ -68,7 +68,7 @@ aws cloudformation deploy \
     OpenAIModel=gpt-5.2
 ```
 
-The pipeline is named `agentic-open-ai`. It creates a CodeBuild project named `agentic-open-ai-agentic-deploy` and an ECR repository for the endpoint image. CodeBuild builds the CrewAI Lambda container image, pushes it to ECR, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
+The pipeline is named `aws-autogen-open-ai-pincone`. It creates a CodeBuild project named `aws-autogen-open-ai-pincone-agentic-deploy` and an ECR repository for the endpoint image. CodeBuild builds the CrewAI Lambda container image, pushes it to ECR, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
 
 The pipeline smoke test uses `dry_run: true` to validate the deployed AWS endpoint without calling OpenAI during deployment. Remove `dry_run` from inference requests to run the live CrewAI/OpenAI workflow.
 

@@ -19,8 +19,11 @@ def main():
     endpoint_template = read("infrastructure/agentic-endpoint.yaml")
     requirements = read("agentic_endpoint/requirements.txt")
 
+    require("aws-autogen-open-ai-pincone" in buildspec, "Buildspec PROJECT_NAME must match the requested pipeline name.")
+    require("Default: aws-autogen-open-ai-pincone" in cicd_template, "CodePipeline ProjectName default must match the requested pipeline name.")
+    require("Default: aws-autogen-open-ai-pincone" in endpoint_template, "Endpoint ProjectName default must match the requested pipeline name.")
     require("kalla86840/awscrewai" in cicd_template, "CodePipeline source must point to kalla86840/awscrewai.")
-    require("agentic-open-ai-crewai-endpoint" in cicd_template, "ECR repository default must use the CrewAI endpoint name.")
+    require("aws-autogen-open-ai-pincone-crewai-endpoint" in cicd_template, "ECR repository default must use the renamed pipeline prefix.")
     require("${ProjectName}-crewai-endpoint" in endpoint_template, "Lambda function name must match the CodeBuild smoke test.")
     require("--function-name \"${PROJECT_NAME}-crewai-endpoint\"" in buildspec, "CodeBuild must invoke the deployed CrewAI Lambda.")
     require('"orchestrator":"crewai"' in buildspec, "Endpoint metadata must identify the CrewAI orchestrator.")

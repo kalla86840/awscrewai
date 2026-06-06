@@ -4,7 +4,7 @@ Description: AWS CodePipeline for the CrewAI and OpenAI agentic hospital real-ti
 Parameters:
   ProjectName:
     Type: String
-    Default: agentic-open-ai
+    Default: aws-autogen-open-ai-pincone
   ArtifactBucketName:
     Type: String
     Default: mlopswithsagemaker111
@@ -27,9 +27,37 @@ Parameters:
   OpenAIModel:
     Type: String
     Default: gpt-5.2
+  PineconeApiKeySecretArn:
+    Type: String
+    Default: ""
+    Description: Optional Secrets Manager ARN containing the Pinecone API key.
+  PineconeIndexName:
+    Type: String
+    Default: agentic-hospital-rag-1024
+  PineconeIndexHost:
+    Type: String
+    Default: ""
+  PineconeNamespace:
+    Type: String
+    Default: hospital-agentic
+  PineconeDimension:
+    Type: Number
+    Default: 1024
+  PineconeCloud:
+    Type: String
+    Default: aws
+  PineconeRegion:
+    Type: String
+    Default: us-east-1
+  PineconeUpsertOnQuery:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
   EcrRepositoryName:
     Type: String
-    Default: agentic-open-ai-crewai-endpoint
+    Default: aws-autogen-open-ai-pincone-crewai-endpoint
 
 Resources:
   AgenticEndpointRepository:
@@ -140,6 +168,10 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: !Ref OpenAIApiKeySecretArn
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref PineconeApiKeySecretArn
 
   AgenticCodePipelineRole:
     Type: AWS::IAM::Role
@@ -198,6 +230,22 @@ Resources:
             Value: !Ref OpenAIApiKeySecretArn
           - Name: OPENAI_MODEL
             Value: !Ref OpenAIModel
+          - Name: PINECONE_API_KEY_SECRET_ARN
+            Value: !Ref PineconeApiKeySecretArn
+          - Name: PINECONE_INDEX_NAME
+            Value: !Ref PineconeIndexName
+          - Name: PINECONE_INDEX_HOST
+            Value: !Ref PineconeIndexHost
+          - Name: PINECONE_NAMESPACE
+            Value: !Ref PineconeNamespace
+          - Name: PINECONE_DIMENSION
+            Value: !Ref PineconeDimension
+          - Name: PINECONE_CLOUD
+            Value: !Ref PineconeCloud
+          - Name: PINECONE_REGION
+            Value: !Ref PineconeRegion
+          - Name: PINECONE_UPSERT_ON_QUERY
+            Value: !Ref PineconeUpsertOnQuery
           - Name: ECR_REPOSITORY_URI
             Value: !GetAtt AgenticEndpointRepository.RepositoryUri
       Source:

@@ -4,10 +4,18 @@ env:
   variables:
     AWS_DEFAULT_REGION: us-west-1
     AWS_REGION: us-west-1
-    PROJECT_NAME: agentic-open-ai
+    PROJECT_NAME: aws-autogen-open-ai-pincone
     ARTIFACT_BUCKET: mlopswithsagemaker111
     OPENAI_MODEL: gpt-5.2
     OPENAI_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ
+    PINECONE_API_KEY_SECRET_ARN: ""
+    PINECONE_INDEX_NAME: agentic-hospital-rag-1024
+    PINECONE_INDEX_HOST: ""
+    PINECONE_NAMESPACE: hospital-agentic
+    PINECONE_DIMENSION: "1024"
+    PINECONE_CLOUD: aws
+    PINECONE_REGION: us-east-1
+    PINECONE_UPSERT_ON_QUERY: "true"
 
 phases:
   install:
@@ -21,7 +29,7 @@ phases:
       - test -n "${ECR_REPOSITORY_URI}" || (echo "ECR_REPOSITORY_URI must be set by the CodePipeline stack" && exit 1)
       - AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
       - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:-latest}"
-      - IMAGE_TAG="${IMAGE_TAG:0:12}"
+      - IMAGE_TAG="$(printf '%s' "${IMAGE_TAG}" | cut -c1-12)"
       - IMAGE_URI="${ECR_REPOSITORY_URI}:${IMAGE_TAG}"
       - aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
   build:
@@ -31,7 +39,7 @@ phases:
       - docker build -t "${IMAGE_URI}" agentic_endpoint
       - docker push "${IMAGE_URI}"
       - echo "${IMAGE_URI}" | tee dist/agentic-endpoint-image-uri.txt
-      - aws cloudformation deploy --template-file infrastructure/agentic-endpoint.yaml --stack-name "${PROJECT_NAME}-agentic-endpoint" --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ProjectName="${PROJECT_NAME}" ImageUri="${IMAGE_URI}" OpenAIApiKeySecretArn="${OPENAI_API_KEY_SECRET_ARN}" OpenAIModel="${OPENAI_MODEL}"
+      - aws cloudformation deploy --template-file infrastructure/agentic-endpoint.yaml --stack-name "${PROJECT_NAME}-agentic-endpoint" --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ProjectName="${PROJECT_NAME}" ImageUri="${IMAGE_URI}" OpenAIApiKeySecretArn="${OPENAI_API_KEY_SECRET_ARN}" OpenAIModel="${OPENAI_MODEL}" PineconeApiKeySecretArn="${PINECONE_API_KEY_SECRET_ARN}" PineconeIndexName="${PINECONE_INDEX_NAME}" PineconeIndexHost="${PINECONE_INDEX_HOST}" PineconeNamespace="${PINECONE_NAMESPACE}" PineconeDimension="${PINECONE_DIMENSION}" PineconeCloud="${PINECONE_CLOUD}" PineconeRegion="${PINECONE_REGION}" PineconeUpsertOnQuery="${PINECONE_UPSERT_ON_QUERY}"
       - ENDPOINT_URL="$(aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-agentic-endpoint" --query "Stacks[0].Outputs[?OutputKey=='AgenticFunctionUrl'].OutputValue" --output text)"
       - echo "${ENDPOINT_URL}" | tee dist/agentic-endpoint-url.txt
       - printf '{"endpoint_url":"%s","agents":["agent_1:hospital","agent_2:doctor","agent_3:nurse"],"orchestrator":"crewai","model":"%s","aws_service":"lambda-function-url"}\n' "${ENDPOINT_URL}" "${OPENAI_MODEL}" | tee dist/agentic-endpoint-metadata.json

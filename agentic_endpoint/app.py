@@ -9,6 +9,11 @@ import yaml
 from openai import OpenAI
 
 try:
+    from pinecone import Pinecone, ServerlessSpec
+except ImportError:  # Pinecone is optional for local tests and falls back to keyword retrieval.
+    Pinecone = ServerlessSpec = None
+
+try:
     from crewai import Agent, Crew, LLM, Process, Task
 except ImportError:  # Allows fast local contract tests without the full Lambda dependency set.
     Agent = Crew = LLM = Process = Task = None
@@ -16,6 +21,9 @@ except ImportError:  # Allows fast local contract tests without the full Lambda 
 
 PROFILE_PATH = Path(__file__).with_name("agent_profiles.yaml")
 DEFAULT_RAG_PATH = Path(__file__).with_name("hospital_agentic_rag_knowledge.txt")
+DEFAULT_PINECONE_INDEX_NAME = "agentic-hospital-rag-1024"
+DEFAULT_PINECONE_NAMESPACE = "hospital-agentic"
+DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 AGENT_ALIASES = {
     "agent_1": "hospital",
     "agent_2": "doctor",
@@ -102,11 +110,8 @@ def load_text_knowledge_base(path):
     return documents
 
 
-def retrieve_context(payload):
-    knowledge_path = Path(payload.get("rag_knowledge_path") or os.getenv("RAG_KNOWLEDGE_PATH", DEFAULT_RAG_PATH))
-    top_k = int(payload.get("rag_top_k") or os.getenv("RAG_TOP_K", "4"))
-    documents = load_text_knowledge_base(knowledge_path)
-    query = json.dumps(
+def build_retrieval_query(payload):
+    return json.dumps(
         {
             "task": payload.get("task", ""),
             "chief_concern": payload.get("chief_concern", ""),
@@ -116,6 +121,9 @@ def retrieve_context(payload):
             "requested_inference": payload.get("requested_inference", ""),
         }
     )
+
+
+def keyword_retrieve_context(payload, documents, query, top_k):
     query_terms = Counter(_tokenize(query))
 
     scored_documents = []
@@ -128,7 +136,136 @@ def retrieve_context(payload):
     selected = [document for score, document in scored_documents if score > 0]
     if not selected:
         selected = [document for _, document in scored_documents]
-    return selected[:top_k]
+    selected = selected[:top_k]
+    for document in selected:
+        document.setdefault("retrieval_source", "keyword")
+    return selected
+
+
+def get_secret_value(secret_arn):
+    client = boto3.client("secretsmanager")
+    secret = client.get_secret_value(SecretId=secret_arn)
+    return secret["SecretString"]
+
+
+def get_pinecone_api_key():
+    direct_key = os.getenv("PINECONE_API_KEY")
+    if direct_key:
+        return direct_key
+
+    secret_arn = os.getenv("PINECONE_API_KEY_SECRET_ARN")
+    if secret_arn:
+        return get_secret_value(secret_arn)
+    return None
+
+
+def pinecone_is_available(payload):
+    if payload.get("disable_pinecone") is True:
+        return False
+    return Pinecone is not None and bool(get_pinecone_api_key())
+
+
+def create_embedding(client, text):
+    dimension = int(os.getenv("PINECONE_DIMENSION", "1024"))
+    result = client.embeddings.create(
+        model=os.getenv("OPENAI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL),
+        input=text,
+        dimensions=dimension,
+    )
+    return result.data[0].embedding
+
+
+def get_pinecone_index(api_key):
+    index_host = os.getenv("PINECONE_INDEX_HOST", "")
+    pc = Pinecone(api_key=api_key)
+    if index_host:
+        return pc.Index(host=index_host)
+
+    index_name = os.getenv("PINECONE_INDEX_NAME", DEFAULT_PINECONE_INDEX_NAME)
+    existing_names = [index["name"] for index in pc.list_indexes()]
+    if index_name not in existing_names:
+        pc.create_index(
+            name=index_name,
+            dimension=int(os.getenv("PINECONE_DIMENSION", "1024")),
+            metric=os.getenv("PINECONE_METRIC", "cosine"),
+            spec=ServerlessSpec(
+                cloud=os.getenv("PINECONE_CLOUD", "aws"),
+                region=os.getenv("PINECONE_REGION", "us-east-1"),
+            ),
+        )
+    return pc.Index(index_name)
+
+
+def pinecone_retrieve_context(payload, documents, query, top_k, openai_api_key):
+    api_key = get_pinecone_api_key()
+    if not api_key:
+        return []
+
+    client = OpenAI(api_key=openai_api_key)
+    index = get_pinecone_index(api_key)
+    namespace = payload.get("namespace") or os.getenv("PINECONE_NAMESPACE", DEFAULT_PINECONE_NAMESPACE)
+
+    if os.getenv("PINECONE_UPSERT_ON_QUERY", "true").lower() == "true":
+        vectors = []
+        for document in documents:
+            vectors.append(
+                {
+                    "id": document["id"],
+                    "values": create_embedding(client, document["content"]),
+                    "metadata": {
+                        "title": document["title"],
+                        "source": document["source"],
+                        "content": document["content"],
+                    },
+                }
+            )
+        index.upsert(vectors=vectors, namespace=namespace)
+
+    query_vector = create_embedding(client, query)
+    result = index.query(
+        vector=query_vector,
+        top_k=top_k,
+        namespace=namespace,
+        include_metadata=True,
+    )
+
+    contexts = []
+    for match in result.get("matches", []):
+        metadata = match.get("metadata") or {}
+        contexts.append(
+            {
+                "id": match.get("id"),
+                "title": metadata.get("title", match.get("id", "Pinecone match")),
+                "source": metadata.get("source", "pinecone"),
+                "content": metadata.get("content", ""),
+                "score": match.get("score"),
+                "retrieval_source": "pinecone",
+                "namespace": namespace,
+            }
+        )
+    return contexts
+
+
+def retrieve_context(payload, openai_api_key=None):
+    knowledge_path = Path(payload.get("rag_knowledge_path") or os.getenv("RAG_KNOWLEDGE_PATH", DEFAULT_RAG_PATH))
+    top_k = int(payload.get("rag_top_k") or os.getenv("RAG_TOP_K", "4"))
+    documents = load_text_knowledge_base(knowledge_path)
+    query = build_retrieval_query(payload)
+
+    if openai_api_key and pinecone_is_available(payload):
+        try:
+            contexts = pinecone_retrieve_context(payload, documents, query, top_k, openai_api_key)
+            if contexts:
+                return contexts
+        except Exception as exc:
+            if payload.get("strict_pinecone") is True:
+                raise
+            fallback = keyword_retrieve_context(payload, documents, query, top_k)
+            for document in fallback:
+                document["pinecone_error"] = str(exc)
+            return fallback
+
+    return keyword_retrieve_context(payload, documents, query, top_k)
 
 
 def parse_body(event):
@@ -159,9 +296,7 @@ def get_openai_api_key():
     if not secret_arn:
         raise RuntimeError("OPENAI_API_KEY_SECRET_ARN or OPENAI_API_KEY must be set.")
 
-    client = boto3.client("secretsmanager")
-    secret = client.get_secret_value(SecretId=secret_arn)
-    return secret["SecretString"]
+    return get_secret_value(secret_arn)
 
 
 def build_agent_input(payload, prior_outputs, retrieved_context):
@@ -370,7 +505,8 @@ def lambda_handler(event, context):
         profiles = load_profiles()
         max_output_tokens = int(payload.get("max_output_tokens") or os.getenv("MAX_OUTPUT_TOKENS", "1400"))
         requested_agents = payload.get("agents") or DEFAULT_AGENT_SEQUENCE
-        retrieved_context = retrieve_context(payload)
+        openai_api_key = None if payload.get("dry_run") is True else get_openai_api_key()
+        retrieved_context = retrieve_context(payload, openai_api_key=openai_api_key)
 
         if payload.get("dry_run") is True:
             inference, dry_result = run_dry_inference(payload, requested_agents, profiles, retrieved_context)
@@ -387,7 +523,7 @@ def lambda_handler(event, context):
                 },
             )
 
-        api_key = get_openai_api_key()
+        api_key = openai_api_key
         use_crewai = payload.get("use_crewai", True) is not False and crewai_is_available()
         client = None if use_crewai else OpenAI(api_key=api_key)
         agent_outputs = []

@@ -4,7 +4,7 @@ Description: CrewAI and OpenAI agentic hospital real-time inference Lambda endpo
 Parameters:
   ProjectName:
     Type: String
-    Default: agentic-open-ai
+    Default: aws-autogen-open-ai-pincone
   ImageUri:
     Type: String
     Description: ECR image URI for the packaged CrewAI Lambda container.
@@ -14,6 +14,35 @@ Parameters:
   OpenAIModel:
     Type: String
     Default: gpt-5.2
+  PineconeApiKeySecretArn:
+    Type: String
+    Default: ""
+    Description: Optional Secrets Manager ARN containing the Pinecone API key.
+  PineconeIndexName:
+    Type: String
+    Default: agentic-hospital-rag-1024
+  PineconeIndexHost:
+    Type: String
+    Default: ""
+    Description: Optional Pinecone index host. Leave empty to use PineconeIndexName.
+  PineconeNamespace:
+    Type: String
+    Default: hospital-agentic
+  PineconeDimension:
+    Type: Number
+    Default: 1024
+  PineconeCloud:
+    Type: String
+    Default: aws
+  PineconeRegion:
+    Type: String
+    Default: us-east-1
+  PineconeUpsertOnQuery:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
   FunctionUrlAuthType:
     Type: String
     Default: NONE
@@ -49,6 +78,10 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: !Ref OpenAIApiKeySecretArn
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref PineconeApiKeySecretArn
 
   AgenticFunction:
     Type: AWS::Lambda::Function
@@ -67,6 +100,15 @@ Resources:
           MAX_OUTPUT_TOKENS: "1400"
           RAG_KNOWLEDGE_PATH: hospital_agentic_rag_knowledge.txt
           RAG_TOP_K: "4"
+          PINECONE_API_KEY_SECRET_ARN: !Ref PineconeApiKeySecretArn
+          PINECONE_INDEX_NAME: !Ref PineconeIndexName
+          PINECONE_INDEX_HOST: !Ref PineconeIndexHost
+          PINECONE_NAMESPACE: !Ref PineconeNamespace
+          PINECONE_DIMENSION: !Ref PineconeDimension
+          PINECONE_CLOUD: !Ref PineconeCloud
+          PINECONE_REGION: !Ref PineconeRegion
+          PINECONE_UPSERT_ON_QUERY: !Ref PineconeUpsertOnQuery
+          OPENAI_EMBEDDING_MODEL: text-embedding-3-small
 
   AgenticFunctionUrl:
     Type: AWS::Lambda::Url
