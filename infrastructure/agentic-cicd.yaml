@@ -4,7 +4,7 @@ Description: AWS CodePipeline for the OpenAI agentic hospital real-time inferenc
 Parameters:
   ProjectName:
     Type: String
-    Default: aws-open-ai-crewai
+    Default: aws-open-ai-autogen
   ArtifactBucketName:
     Type: String
     Default: mlopswithsagemaker111
@@ -15,7 +15,7 @@ Parameters:
     Description: CodeConnections connection ARN for the GitHub repository.
   RepositoryId:
     Type: String
-    Default: kalla86840/awscrewai
+    Default: kalla86840/awsautogen
     Description: Repository identifier, for example owner/repository.
   BranchName:
     Type: String
@@ -29,7 +29,7 @@ Parameters:
     Default: gpt-5.2
   EcrRepositoryName:
     Type: String
-    Default: aws-open-ai-crewai-endpoint
+    Default: aws-open-ai-autogen-endpoint
 
 Resources:
   AgenticEndpointRepository:

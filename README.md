@@ -1,6 +1,6 @@
 ﻿# Build Agentic RAG Pipeline
 
-This repository contains AWS CI/CD pipelines for CrewAI and OpenAI-backed real-time RAG endpoints. The primary agentic CodePipeline source is configured for `kalla86840/awscrewai`, with AWS CodePipeline packaging and deploying a Lambda Function URL inference endpoint.
+This repository contains AWS CI/CD pipelines for CrewAI and OpenAI-backed real-time RAG endpoints. The primary agentic CodePipeline source is configured for `kalla86840/awsautogen`, with AWS CodePipeline packaging and deploying a Lambda Function URL inference endpoint.
 
 Start here for the AWS MCP Ops deployment path:
 
@@ -88,7 +88,7 @@ infrastructure/open-ai-rag-endpoint-cicd.yaml
 
 The deployable hospital endpoint lives in `agentic_endpoint/` and is wired to
 AWS CodePipeline through `infrastructure/agentic-cicd.yaml`. The pipeline pulls
-from `kalla86840/awscrewai`, packages the Python Lambda with OpenAI and CrewAI
+from `kalla86840/awsautogen`, packages the Python Lambda with OpenAI and CrewAI
 dependencies into an Amazon ECR Lambda container image, deploys
 `infrastructure/agentic-endpoint.yaml`, and writes
 the produced real-time HTTPS Lambda Function URL to:
@@ -113,25 +113,25 @@ Deploy the pipeline stack:
 aws cloudformation deploy \
   --region us-west-1 \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name aws-open-ai-crewai-cicd \
+  --stack-name aws-open-ai-autogen-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=aws-open-ai-crewai \
+    ProjectName=aws-open-ai-autogen \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awscrewai \
+    RepositoryId=kalla86840/awsautogen \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2
 ```
 
-This creates a CodePipeline named `aws-open-ai-crewai` and a Lambda Function URL
-endpoint named `aws-open-ai-crewai`.
+This creates a CodePipeline named `aws-open-ai-autogen` and a Lambda Function URL
+endpoint named `aws-open-ai-autogen`.
 
 Start the pipeline:
 
 ```bash
-aws codepipeline start-pipeline-execution --region us-west-1 --name aws-open-ai-crewai
+aws codepipeline start-pipeline-execution --region us-west-1 --name aws-open-ai-autogen
 ```
 
 If Azure DevOps is used for pre-merge unit tests, point it at
@@ -332,7 +332,7 @@ samples/agentic_hospital_request.json
 samples/agentic_hospital_sample_inference.json
 ```
 
-After deployment, get the URL from the `aws-open-ai-crewai-endpoint` CloudFormation stack output named `AgenticFunctionUrl`.
+After deployment, get the URL from the `aws-open-ai-autogen-endpoint` CloudFormation stack output named `AgenticFunctionUrl`.
 
 ## AWS And OpenAI Configuration
 
@@ -486,13 +486,13 @@ curl -X POST "$ENDPOINT_URL" \
 aws cloudformation deploy \
   --region us-west-1 \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name aws-open-ai-crewai-cicd \
+  --stack-name aws-open-ai-autogen-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=aws-open-ai-crewai \
+    ProjectName=aws-open-ai-autogen \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awscrewai \
+    RepositoryId=kalla86840/awsautogen \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2

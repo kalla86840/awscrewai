@@ -4,7 +4,7 @@ env:
   variables:
     AWS_DEFAULT_REGION: us-west-1
     AWS_REGION: us-west-1
-    PROJECT_NAME: aws-open-ai-crewai
+    PROJECT_NAME: aws-open-ai-autogen
     ARTIFACT_BUCKET: mlopswithsagemaker111
     OPENAI_MODEL: gpt-5.2
     OPENAI_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ
