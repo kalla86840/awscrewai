@@ -1,6 +1,6 @@
 # OpenAI Agentic Hospital Endpoint
 
-This endpoint creates a real-time agentic RAG inference workflow for hospital coordination. It receives a hospital event, retrieves relevant context through Pinecone when a Pinecone secret is configured, falls back to packaged keyword retrieval when Pinecone is not configured, runs three CrewAI agents backed by OpenAI, and returns structured JSON for care coordination.
+This endpoint creates a real-time agentic RAG inference workflow for hospital coordination. It receives a hospital event, retrieves relevant context from the packaged hospital knowledge file, runs three CrewAI agents backed by OpenAI, and returns structured JSON for care coordination.
 
 ## Files
 
@@ -49,45 +49,27 @@ The default agent sequence is:
 
 The endpoint retrieves relevant RAG sections and passes them to every agent. It then runs a final coordinator pass that returns `retrieved_context`, agent outputs, and a structured inference with `case_summary`, `care_team_consensus`, `recommended_actions`, `signals_to_monitor`, `escalation_level`, and `handoff`.
 
-Pinecone retrieval is controlled by these deployment parameters and Lambda environment variables:
-
-- `PineconeApiKeySecretArn`: Secrets Manager ARN for the Pinecone API key. Leave it empty to use keyword retrieval only.
-- `PineconeIndexName`: default `news-demo`.
-- `PineconeIndexHost`: optional existing Pinecone host. Leave empty to use `PineconeIndexName`.
-- `PineconeNamespace`: default `hospital-agentic`.
-- `PineconeDimension`: default `1024`, matching `text-embedding-3-small` with a 1024-dimensional embedding request.
-- `PineconeUpsertOnQuery`: default `true`, so the bundled hospital knowledge is seeded before querying.
-
-Request payloads can set `"disable_pinecone": true` for keyword retrieval or `"strict_pinecone": true` to fail instead of falling back when Pinecone returns an error.
-
 ## Deploy
 
 Create the CI/CD pipeline:
 
 ```bash
 aws cloudformation deploy \
+  --region us-west-1 \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name aws-autogen-open-ai-pincone-cicd \
+  --stack-name aws-open-ai-crewai-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=aws-autogen-open-ai-pincone \
+    ProjectName=aws-open-ai-crewai \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
     RepositoryId=kalla86840/awscrewai \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
-    OpenAIModel=gpt-5.2 \
-    PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
-    PineconeIndexName=news-demo \
-    PineconeIndexHost="" \
-    PineconeNamespace=hospital-agentic \
-    PineconeDimension=1024 \
-    PineconeCloud=aws \
-    PineconeRegion=us-east-1 \
-    PineconeUpsertOnQuery=true
+    OpenAIModel=gpt-5.2
 ```
 
-The default Pinecone settings reuse your existing `news-demo` index in AWS `us-east-1`. The pipeline is named `aws-autogen-open-ai-pincone`. It creates a CodeBuild project named `aws-autogen-open-ai-pincone-agentic-deploy` and an ECR repository for the endpoint image. CodeBuild builds the CrewAI Lambda container image, pushes it to ECR, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
+The pipeline is named `aws-open-ai-crewai`. It creates a CodeBuild project named `aws-open-ai-crewai-agentic-deploy`, an ECR repository for the endpoint image, and a Lambda Function URL endpoint named `aws-open-ai-crewai`. CodeBuild builds the Lambda container image, pushes it to ECR, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
 
 The pipeline smoke test uses `dry_run: true` to validate the deployed AWS endpoint without calling OpenAI during deployment. Remove `dry_run` from inference requests to run the live CrewAI/OpenAI workflow.
 

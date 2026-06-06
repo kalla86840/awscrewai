@@ -88,8 +88,8 @@ infrastructure/open-ai-rag-endpoint-cicd.yaml
 
 The deployable hospital endpoint lives in `agentic_endpoint/` and is wired to
 AWS CodePipeline through `infrastructure/agentic-cicd.yaml`. The pipeline pulls
-from `kalla86840/awscrewai`, packages the Python Lambda with OpenAI, CrewAI,
-and Pinecone dependencies into an Amazon ECR Lambda container image, deploys
+from `kalla86840/awscrewai`, packages the Python Lambda with OpenAI and CrewAI
+dependencies into an Amazon ECR Lambda container image, deploys
 `infrastructure/agentic-endpoint.yaml`, and writes
 the produced real-time HTTPS Lambda Function URL to:
 
@@ -111,35 +111,27 @@ Deploy the pipeline stack:
 
 ```bash
 aws cloudformation deploy \
+  --region us-west-1 \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name aws-autogen-open-ai-pincone-cicd \
+  --stack-name aws-open-ai-crewai-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=aws-autogen-open-ai-pincone \
+    ProjectName=aws-open-ai-crewai \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
     RepositoryId=kalla86840/awscrewai \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
-    OpenAIModel=gpt-5.2 \
-    PineconeApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:awspineconeapikey1-kiudra \
-    PineconeIndexName=news-demo \
-    PineconeIndexHost="" \
-    PineconeNamespace=hospital-agentic \
-    PineconeDimension=1024 \
-    PineconeCloud=aws \
-    PineconeRegion=us-east-1 \
-    PineconeUpsertOnQuery=true
+    OpenAIModel=gpt-5.2
 ```
 
-The default Pinecone settings reuse your existing `news-demo` index in AWS
-`us-east-1` with 1024-dimensional OpenAI embeddings. Leave
-`PineconeApiKeySecretArn` empty only when you want the packaged keyword fallback.
+This creates a CodePipeline named `aws-open-ai-crewai` and a Lambda Function URL
+endpoint named `aws-open-ai-crewai`.
 
 Start the pipeline:
 
 ```bash
-aws codepipeline start-pipeline-execution --name aws-autogen-open-ai-pincone
+aws codepipeline start-pipeline-execution --region us-west-1 --name aws-open-ai-crewai
 ```
 
 If Azure DevOps is used for pre-merge unit tests, point it at
@@ -340,7 +332,7 @@ samples/agentic_hospital_request.json
 samples/agentic_hospital_sample_inference.json
 ```
 
-After deployment, get the URL from the `aws-autogen-open-ai-pincone-agentic-endpoint` CloudFormation stack output named `AgenticFunctionUrl`.
+After deployment, get the URL from the `aws-open-ai-crewai-endpoint` CloudFormation stack output named `AgenticFunctionUrl`.
 
 ## AWS And OpenAI Configuration
 
@@ -494,13 +486,13 @@ curl -X POST "$ENDPOINT_URL" \
 aws cloudformation deploy \
   --region us-west-1 \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name aws-autogen-open-ai-pincone-cicd \
+  --stack-name aws-open-ai-crewai-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=aws-autogen-open-ai-pincone \
+    ProjectName=aws-open-ai-crewai \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awsmcpops \
+    RepositoryId=kalla86840/awscrewai \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2
