@@ -8,10 +8,8 @@ import boto3
 import yaml
 from openai import OpenAI
 
-try:
-    from crewai import Agent, Crew, LLM, Process, Task
-except ImportError:  # Allows fast local contract tests without the full Lambda dependency set.
-    Agent = Crew = LLM = Process = Task = None
+Agent = Crew = LLM = Process = Task = None
+CREWAI_IMPORT_ERROR = None
 
 
 PROFILE_PATH = Path(__file__).with_name("agent_profiles.yaml")
@@ -220,12 +218,40 @@ def _crew_output_text(output):
     return str(output)
 
 
+def load_crewai_components():
+    global Agent, Crew, LLM, Process, Task, CREWAI_IMPORT_ERROR
+    if all(component is not None for component in (Agent, Crew, LLM, Process, Task)):
+        return True
+
+    try:
+        for path in ("/tmp/crewai", "/tmp/crewai-data", "/tmp/crewai-cache"):
+            Path(path).mkdir(parents=True, exist_ok=True)
+        os.environ.setdefault("HOME", "/tmp")
+        os.environ.setdefault("XDG_DATA_HOME", "/tmp/crewai-data")
+        os.environ.setdefault("XDG_CONFIG_HOME", "/tmp/crewai")
+        os.environ.setdefault("XDG_CACHE_HOME", "/tmp/crewai-cache")
+        os.environ.setdefault("CREWAI_STORAGE_DIR", "/tmp/crewai")
+        from crewai import Agent as CrewAgent
+        from crewai import Crew as CrewRunner
+        from crewai import LLM as CrewLLM
+        from crewai import Process as CrewProcess
+        from crewai import Task as CrewTask
+
+        Agent, Crew, LLM, Process, Task = CrewAgent, CrewRunner, CrewLLM, CrewProcess, CrewTask
+        CREWAI_IMPORT_ERROR = None
+        return True
+    except Exception as exc:  # Allows dry-run and OpenAI fallback when CrewAI cannot initialize in Lambda.
+        CREWAI_IMPORT_ERROR = str(exc)
+        Agent = Crew = LLM = Process = Task = None
+        return False
+
+
 def crewai_is_available():
-    return all(component is not None for component in (Agent, Crew, LLM, Process, Task))
+    return load_crewai_components()
 
 
 def build_llm(model, api_key):
-    if not crewai_is_available():
+    if not load_crewai_components():
         return None
     return LLM(model=f"openai/{model}", api_key=api_key)
 
