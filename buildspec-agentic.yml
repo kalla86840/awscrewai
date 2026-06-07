@@ -35,34 +35,6 @@ phases:
       - docker push "${IMAGE_URI}"
       - echo "${IMAGE_URI}" | tee dist/agentic-endpoint-image-uri.txt
       - |
-        cat > /tmp/lambda-ecr-policy.json <<EOF
-        {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Sid": "LambdaEcrImageRetrieval",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              },
-              "Action": [
-                "ecr:BatchGetImage",
-                "ecr:GetDownloadUrlForLayer"
-              ],
-              "Condition": {
-                "StringEquals": {
-                  "aws:SourceAccount": "${AWS_ACCOUNT_ID}"
-                },
-                "StringLike": {
-                  "aws:SourceArn": "arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${PROJECT_NAME}*"
-                }
-              }
-            }
-          ]
-        }
-        EOF
-        aws ecr set-repository-policy --region "${AWS_REGION}" --repository-name "${ECR_REPOSITORY_NAME}" --policy-text file:///tmp/lambda-ecr-policy.json
-      - |
         ENDPOINT_STACK="${PROJECT_NAME}-endpoint"
         STACK_STATUS="$(aws cloudformation describe-stacks --stack-name "${ENDPOINT_STACK}" --query 'Stacks[0].StackStatus' --output text 2>/dev/null || true)"
         case "${STACK_STATUS}" in
