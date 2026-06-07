@@ -92,14 +92,6 @@ Resources:
       Principal: "*"
       FunctionUrlAuthType: !Ref FunctionUrlAuthType
 
-  AgenticFunctionInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref AgenticFunction
-      Action: lambda:InvokeFunction
-      Principal: "*"
-      InvokedViaFunctionUrl: true
-
 Outputs:
   AgenticFunctionName:
     Value: !Ref AgenticFunction
