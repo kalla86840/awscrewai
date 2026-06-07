@@ -19,12 +19,12 @@ The endpoint first retrieves relevant sections from `agentic_endpoint/hospital_a
 ```text
 GitHub source repository
   -> AWS CodePipeline source stage
-  -> AWS CodeBuild project aws-open-ai-autogen-agentic-deploy
+  -> AWS CodeBuild project aws-open-ai-crewai-agentic-deploy
   -> Package agentic_endpoint/app.py, agent_profiles.yaml, RAG text file, and dependencies
   -> Upload dist/agentic-endpoint.zip to S3
   -> CloudFormation deploy infrastructure/agentic-endpoint.yaml
   -> Lambda Function URL real-time endpoint
-  -> Invoke aws-open-ai-autogen with samples/agentic_hospital_request.json
+  -> Invoke aws-open-ai-crewai with samples/agentic_hospital_request.json
   -> POST hospital event JSON for OpenAI-backed agentic RAG inference
 ```
 
@@ -84,13 +84,13 @@ samples/agentic_hospital_sample_inference.json
 aws cloudformation deploy \
   --region us-west-1 \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name aws-open-ai-autogen-cicd \
+  --stack-name aws-open-ai-crewai-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=aws-open-ai-autogen \
+    ProjectName=aws-open-ai-crewai \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awsautogen \
+    RepositoryId=kalla86840/awscrewai \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2
@@ -114,7 +114,7 @@ For direct Lambda testing inside AWS, invoke the function by name:
 
 ```bash
 aws lambda invoke \
-  --function-name aws-open-ai-autogen \
+  --function-name aws-open-ai-crewai \
   --payload fileb://samples/agentic_hospital_request.json \
   response.json
 ```

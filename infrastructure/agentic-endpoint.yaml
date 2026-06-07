@@ -4,7 +4,7 @@ Description: OpenAI agentic hospital real-time inference Lambda endpoint.
 Parameters:
   ProjectName:
     Type: String
-    Default: aws-open-ai-autogen
+    Default: aws-open-ai-crewai
   ImageUri:
     Type: String
     Description: ECR image URI for the packaged CrewAI Lambda container.

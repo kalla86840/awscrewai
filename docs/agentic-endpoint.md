@@ -57,19 +57,19 @@ Create the CI/CD pipeline:
 aws cloudformation deploy \
   --region us-west-1 \
   --template-file infrastructure/agentic-cicd.yaml \
-  --stack-name aws-open-ai-autogen-cicd \
+  --stack-name aws-open-ai-crewai-cicd \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides \
-    ProjectName=aws-open-ai-autogen \
+    ProjectName=aws-open-ai-crewai \
     ArtifactBucketName=mlopswithsagemaker111 \
     CodeStarConnectionArn=arn:aws:codeconnections:us-west-1:659613508664:connection/4ea8863c-728d-450a-8752-251946939b36 \
-    RepositoryId=kalla86840/awsautogen \
+    RepositoryId=kalla86840/awscrewai \
     BranchName=main \
     OpenAIApiKeySecretArn=arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ \
     OpenAIModel=gpt-5.2
 ```
 
-The pipeline is named `aws-open-ai-autogen`. It creates a CodeBuild project named `aws-open-ai-autogen-agentic-deploy`, an ECR repository for the endpoint image, and a Lambda Function URL endpoint named `aws-open-ai-autogen`. CodeBuild builds the Lambda container image, pushes it to ECR, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
+The pipeline is named `aws-open-ai-crewai`. It creates a CodeBuild project named `aws-open-ai-crewai-agentic-deploy`, an ECR repository for the endpoint image, and a Lambda Function URL endpoint named `aws-open-ai-crewai`. CodeBuild builds the Lambda container image, pushes it to ECR, deploys `infrastructure/agentic-endpoint.yaml`, and writes the produced Lambda Function URL to `dist/agentic-endpoint-url.txt` as a build artifact.
 
 The pipeline smoke test uses `dry_run: true` to validate the deployed AWS endpoint without calling OpenAI during deployment. Remove `dry_run` from inference requests to run the live CrewAI/OpenAI workflow.
 
