@@ -200,6 +200,8 @@ Resources:
             Value: !Ref OpenAIApiKeySecretArn
           - Name: OPENAI_MODEL
             Value: !Ref OpenAIModel
+          - Name: ECR_REPOSITORY_NAME
+            Value: !Ref EcrRepositoryName
           - Name: ECR_REPOSITORY_URI
             Value: !GetAtt AgenticEndpointRepository.RepositoryUri
       Source:

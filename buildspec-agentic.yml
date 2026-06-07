@@ -8,6 +8,7 @@ env:
     ARTIFACT_BUCKET: mlopswithsagemaker111
     OPENAI_MODEL: gpt-5.2
     OPENAI_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ
+    ECR_REPOSITORY_NAME: aws-open-ai-crewai-endpoint
 
 phases:
   install:
@@ -18,7 +19,9 @@ phases:
   pre_build:
     commands:
       - python scripts/validate_aws_agentic_pipeline.py
-      - test -n "${ECR_REPOSITORY_URI}" || (echo "ECR_REPOSITORY_URI must be set by the CodePipeline stack" && exit 1)
+      - ECR_REPOSITORY_NAME="${ECR_REPOSITORY_NAME:-${PROJECT_NAME}-endpoint}"
+      - ECR_REPOSITORY_URI="${ECR_REPOSITORY_URI:-$(aws ecr describe-repositories --region "${AWS_REGION}" --repository-names "${ECR_REPOSITORY_NAME}" --query "repositories[0].repositoryUri" --output text)}"
+      - test -n "${ECR_REPOSITORY_URI}" -a "${ECR_REPOSITORY_URI}" != "None" || (echo "ECR repository ${ECR_REPOSITORY_NAME} was not found" && exit 1)
       - AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
       - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:-latest}"
       - IMAGE_TAG="$(printf '%s' "${IMAGE_TAG}" | cut -c1-12)"
