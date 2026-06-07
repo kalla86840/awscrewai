@@ -518,4 +518,4 @@ python -c "from rag_endpoint.app import load_documents, retrieve; docs=load_docu
 python -c "import sys, types, json; sys.modules['boto3']=types.SimpleNamespace(client=lambda *a, **k: None); sys.modules['openai']=types.SimpleNamespace(OpenAI=object); sys.modules['yaml']=types.SimpleNamespace(safe_load=lambda f: {}); import agentic_endpoint.app as app; payload=json.load(open('samples/agentic_hospital_request.json', encoding='utf-8')); print([d['title'] for d in app.retrieve_context(payload)])"
 ```
 
-
+test pipeline
