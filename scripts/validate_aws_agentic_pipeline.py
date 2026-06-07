@@ -27,6 +27,8 @@ def main():
     require("lambda.amazonaws.com" in cicd_template, "ECR repository policy must allow Lambda to retrieve images.")
     require("ecr:BatchGetImage" in cicd_template, "ECR repository policy must allow Lambda image metadata reads.")
     require("ecr:GetDownloadUrlForLayer" in cicd_template, "ECR repository policy must allow Lambda image layer downloads.")
+    require("ecr:SetRepositoryPolicy" in cicd_template, "CodeBuild role must be able to repair the ECR repository policy.")
+    require("aws ecr set-repository-policy" in buildspec, "Buildspec must set Lambda ECR access before endpoint deploy.")
     require("ECR_REPOSITORY_NAME" in buildspec, "Buildspec must be able to discover the ECR repository when the URI env var is missing.")
     require("aws ecr describe-repositories" in buildspec, "Buildspec must fall back to ECR repository lookup.")
     require("ECR_REPOSITORY_NAME" in cicd_template, "CodeBuild project must receive the ECR repository name.")

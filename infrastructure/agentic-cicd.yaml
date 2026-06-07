@@ -151,6 +151,7 @@ Resources:
                   - ecr:GetDownloadUrlForLayer
                   - ecr:InitiateLayerUpload
                   - ecr:PutImage
+                  - ecr:SetRepositoryPolicy
                   - ecr:UploadLayerPart
                 Resource: "*"
               - Effect: Allow
